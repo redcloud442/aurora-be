@@ -14,7 +14,7 @@ import user from "./user/user.route.js";
 import withdraw from "./withdraw/withdraw.route.js";
 const app = new Hono();
 //auth route
-app.route("/access", access);
+app.route("/auth", access);
 //health route
 app.route("/health", health);
 //deposit route

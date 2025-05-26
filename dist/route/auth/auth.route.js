@@ -5,6 +5,6 @@ import { authGetMiddleware, authMiddleware, registerUserMiddleware, } from "./au
 const access = new Hono();
 access.get("/", authGetMiddleware, loginGetController);
 access.post("/", authMiddleware, loginController);
-access.post("/xeloraAccess", authMiddleware, adminController);
+access.post("/omnixAccess", authMiddleware, adminController);
 access.post("/register", protectionMiddleware, registerUserMiddleware, registerUserController);
 export default access;

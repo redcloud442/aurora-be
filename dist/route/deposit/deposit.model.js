@@ -66,7 +66,7 @@ export const depositPutModel = async (params) => {
     });
     if (!merchant && teamMemberProfile.company_member_role === "MERCHANT")
         throw new Error("Merchant not found.");
-    return await prisma.$transaction(async (tx) => {
+    const data = await prisma.$transaction(async (tx) => {
         const existingDeposit = await prisma.company_deposit_request_table.findFirst({
             where: {
                 company_deposit_request_member_id: teamMemberProfile.company_member_id,
@@ -157,7 +157,9 @@ export const depositPutModel = async (params) => {
         else {
             return { updatedRequest };
         }
+        return { updatedRequest };
     });
+    return data;
 };
 export const depositHistoryPostModel = async (params, teamMemberProfile) => {
     const { page, limit, search, columnAccessor, isAscendingSort, userId } = params;
@@ -415,16 +417,20 @@ export const depositReportPostModel = async (params) => {
     };
 };
 export const depositUserGetModel = async (params) => {
-    const { id } = params;
-    const existingDeposit = !!(await prisma.company_deposit_request_table.findFirst({
+    const { company_member_id } = params;
+    const existingDeposit = await prisma.company_deposit_request_table.findFirst({
         where: {
-            company_deposit_request_member_id: id,
+            company_deposit_request_member_id: company_member_id,
             company_deposit_request_status: "PENDING",
         },
         take: 1,
         orderBy: {
             company_deposit_request_date: "desc",
         },
-    }));
-    return existingDeposit;
+        select: {
+            company_deposit_request_id: true,
+        },
+    });
+    const data = existingDeposit !== null;
+    return data;
 };

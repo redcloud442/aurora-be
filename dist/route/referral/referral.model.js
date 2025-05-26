@@ -124,9 +124,9 @@ export const referralIndirectModelPost = async (params) => {
     COALESCE(SUM(pa.package_ally_bounty_earnings), 0) AS total_bounty_earnings
   FROM company_schema.company_member_table am
   JOIN user_schema.user_table ut
-    ON ut.user_id = am.alliance_member_user_id
+    ON ut.user_id = am.company_member_user_id
   JOIN packages_schema.package_ally_bounty_log pa
-    ON am.alliance_member_id = pa.package_ally_bounty_from
+    ON am.company_member_id = pa.package_ally_bounty_from
   JOIN company_schema.company_referral_table ar
     ON ar.company_referral_member_id = pa.package_ally_bounty_from
   WHERE pa.package_ally_bounty_from = ANY(${finalIndirectReferralIds}::uuid[])
@@ -151,7 +151,7 @@ export const referralIndirectModelPost = async (params) => {
     JOIN user_schema.user_table ut
       ON ut.user_id = am.company_member_user_id
     JOIN packages_schema.package_ally_bounty_log pa
-      ON am.alliance_member_id = pa.package_ally_bounty_from
+      ON am.company_member_id = pa.package_ally_bounty_from
     WHERE pa.package_ally_bounty_from = ANY(${finalIndirectReferralIds}::uuid[])
       AND pa.package_ally_bounty_member_id = ${teamMemberProfile.company_member_id}::uuid
       ${searchCondition}
@@ -161,7 +161,7 @@ export const referralIndirectModelPost = async (params) => {
       ut.user_last_name,
       ut.user_username,
       ut.user_date_created,
-      am.alliance_member_id,
+      am.company_member_id,
       pa.package_ally_bounty_log_date_created
   ) AS subquery
 `;

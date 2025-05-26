@@ -139,17 +139,26 @@ export const userModelGet = async ({ memberId }) => {
                 ...baseWithdrawFilter,
                 company_withdrawal_request_withdraw_type: "PACKAGE",
             },
+            select: {
+                company_withdrawal_request_id: true,
+            },
         }),
         prisma.company_withdrawal_request_table.findFirst({
             where: {
                 ...baseWithdrawFilter,
                 company_withdrawal_request_withdraw_type: "REFERRAL",
             },
+            select: {
+                company_withdrawal_request_id: true,
+            },
         }),
         prisma.company_deposit_request_table.findFirst({
             where: {
                 company_deposit_request_member_id: memberId,
                 company_deposit_request_status: "PENDING",
+            },
+            select: {
+                company_deposit_request_id: true,
             },
             take: 1,
             orderBy: {
@@ -215,9 +224,9 @@ export const userModelGet = async ({ memberId }) => {
         indirectReferralCount: member?.dashboard_earnings_summary[0]?.indirect_referral_count ?? 0,
     };
     const actions = {
-        canWithdrawPackage: !existingPackageWithdrawal,
-        canWithdrawReferral: !existingReferralWithdrawal,
-        canUserDeposit: !existingDeposit,
+        canWithdrawPackage: existingPackageWithdrawal === null,
+        canWithdrawReferral: existingReferralWithdrawal === null,
+        canUserDeposit: existingDeposit === null,
     };
     const returnData = {
         totalEarnings,

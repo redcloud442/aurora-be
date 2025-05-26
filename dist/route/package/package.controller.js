@@ -116,6 +116,10 @@ export const packageReinvestmentPostController = async (c) => {
             teamMemberProfile: teamMemberProfile,
             user: user,
         });
+        await Promise.all([
+            invalidateCacheVersion(`transaction:${teamMemberProfile.company_member_id}:EARNINGS`),
+            invalidateCache(`user-model-get-${teamMemberProfile.company_member_id}`),
+        ]);
         return c.json(data, 200);
     }
     catch (error) {

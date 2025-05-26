@@ -242,7 +242,7 @@ export const packageGetModel = async () => {
         package_percentage: true,
         packages_days: true,
         package_description: true,
-        package_gif: true,
+        package_color: true,
         package_is_disabled: true,
         package_image: true,
       },
@@ -299,7 +299,7 @@ export const packageCreatePostModel = async (params: {
         package_description: packageDescription,
         package_percentage: parsedPackagePercentage,
         packages_days: parsedPackageDays,
-        package_gif: packageGif,
+        package_color: "",
         package_image: packageImage,
       },
     }),
@@ -339,7 +339,7 @@ export const packageUpdatePutModel = async (params: {
           package_percentage: parseFloat(packagePercentage),
           packages_days: parseInt(packageDays),
           package_is_disabled: packageIsDisabled,
-          package_gif: packageGif,
+          package_color: "",
           package_image: package_image ? package_image : undefined,
         },
       });
@@ -502,7 +502,7 @@ export const packageListGetModel = async (params: {
       package_table: {
         select: {
           package_name: true,
-          package_gif: true,
+          package_color: true,
           packages_days: true,
           package_percentage: true,
           package_image: true,
@@ -546,7 +546,7 @@ export const packageListGetModel = async (params: {
 
       return {
         package: row.package_table.package_name,
-        package_gif: row.package_table.package_gif,
+        package_color: row.package_table.package_color,
         completion_date: completionDate?.toISOString(),
         amount: Number(row.package_member_amount.toFixed(2)),
         completion: Number(percentage.toFixed(2)),
@@ -573,7 +573,7 @@ export const packageListGetAdminModel = async () => {
       package_percentage: true,
       package_description: true,
       packages_days: true,
-      package_gif: true,
+      package_color: true,
       package_image: true,
     },
     orderBy: {

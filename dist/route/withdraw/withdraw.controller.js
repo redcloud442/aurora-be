@@ -34,15 +34,15 @@ export const updateWithdrawPostController = async (c) => {
         const { status, note } = await c.req.json();
         const { id } = c.req.param();
         const teamMemberProfile = c.get("teamMemberProfile");
-        await updateWithdrawModel({
+        const data = await updateWithdrawModel({
             status,
             note,
             teamMemberProfile,
             requestId: id,
         });
         await Promise.all([
-            invalidateCacheVersion(`transaction:${teamMemberProfile.company_member_id}:WITHDRAWAL`),
-            invalidateCache(`user-model-get-${teamMemberProfile.company_member_id}`),
+            invalidateCacheVersion(`transaction:${data?.company_withdrawal_request_member_id}:WITHDRAWAL`),
+            invalidateCache(`user-model-get-${data?.company_withdrawal_request_member_id}`),
         ]);
         return c.json({ message: "Withdrawal updated" }, 200);
     }

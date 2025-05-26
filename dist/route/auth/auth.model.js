@@ -106,6 +106,8 @@ export const registerUserModel = async (params) => {
     if (referalLink) {
         const DEFAULT_COMPANY_ID = "a1b9ceb9-cb09-4c09-832d-6e5a017d048b";
         return await prisma.$transaction(async (tx) => {
+            const referralCode = await generateUniqueReferralCode(tx);
+            const referralLinkURL = `${url}?CODE=${encodeURIComponent(referralCode)}`;
             const user = await tx.user_table.create({
                 data: {
                     user_id: userId,
@@ -115,43 +117,40 @@ export const registerUserModel = async (params) => {
                     user_username: userName,
                     user_bot_field: botField === "true" ? true : false,
                     user_phone_number: phoneNumber,
-                },
-            });
-            if (!user) {
-                throw new Error("Failed to create user");
-            }
-            const allianceMember = await tx.company_member_table.create({
-                data: {
-                    company_member_role: "MEMBER",
-                    company_member_company_id: DEFAULT_COMPANY_ID,
-                    company_member_user_id: userId,
+                    company_member_table: {
+                        create: {
+                            company_member_role: "MEMBER",
+                            company_member_company_id: DEFAULT_COMPANY_ID,
+                            company_earnings_table: {
+                                create: {},
+                            },
+                            company_referral_link_table: {
+                                create: {
+                                    company_referral_link: referralLinkURL,
+                                    company_referral_code: referralCode,
+                                },
+                            },
+                        },
+                    },
                 },
                 select: {
-                    company_member_id: true,
+                    user_id: true,
+                    company_member_table: {
+                        select: {
+                            company_member_id: true,
+                        },
+                    },
                 },
             });
-            const referralCode = await generateUniqueReferralCode(tx);
-            const referralLinkURL = `${url}?CODE=${encodeURIComponent(referralCode)}`;
-            await tx.company_referral_link_table.create({
-                data: {
-                    company_referral_link: referralLinkURL,
-                    company_referral_link_member_id: allianceMember.company_member_id,
-                    company_referral_code: referralCode,
-                },
-            });
-            await tx.company_earnings_table.create({
-                data: {
-                    company_earnings_member_id: allianceMember.company_member_id,
-                },
-            });
-            await handleReferral(tx, referalLink, allianceMember.company_member_id);
+            await handleReferral(tx, referalLink, user.company_member_table[0].company_member_id);
             await supabaseClient.auth.admin.updateUserById(userId, {
                 user_metadata: {
                     Role: "MEMBER",
                     ReferralCode: referralCode,
                     ReferralLink: referralLinkURL,
                     CompanyId: DEFAULT_COMPANY_ID,
-                    CompanyMemberId: allianceMember.company_member_id,
+                    UserName: userName,
+                    CompanyMemberId: user.company_member_table[0].company_member_id,
                 },
             });
             return {

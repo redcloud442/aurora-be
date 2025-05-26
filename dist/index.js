@@ -5,13 +5,14 @@ import { envConfig } from "./env.js";
 import { supabaseMiddleware } from "./middleware/auth.middleware.js";
 import { errorHandlerMiddleware } from "./middleware/errorMiddleware.js";
 import route from "./route/route.js";
+import { globalRateLimit } from "./utils/redis.js";
 const app = new Hono();
 // Apply CORS first, then middleware
 app.use("*", cors({
     origin: (origin) => {
         const allowedOrigins = [
             "http://localhost:5173",
-            "https://your-production-domain.com",
+            "https://www.omnixglobal.app",
         ];
         if (!origin || allowedOrigins.includes(origin)) {
             return origin;
@@ -24,7 +25,7 @@ app.use("*", cors({
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     exposeHeaders: ["Content-Range", "X-Total-Count"],
-}), supabaseMiddleware());
+}), globalRateLimit(), supabaseMiddleware());
 app.use(logger()); // Logger should be before error handling
 app.get("/", (c) => {
     return c.html(`
@@ -47,7 +48,7 @@ app.get("/", (c) => {
         </style>
     </head>
     <body>
-        <h1>API Status test</h1>
+        <h1>API Status</h1>
         <p class="status">✅ API is working perfectly!</p>
         <p>Current Time: ${new Date().toLocaleString()}</p>
     </body>
