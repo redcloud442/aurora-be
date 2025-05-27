@@ -1,3 +1,4 @@
+import { redis } from "@/utils/redis.js";
 import { Prisma, type company_member_table } from "@prisma/client";
 import {
   calculateFee,
@@ -9,7 +10,6 @@ import type {
   WithdrawalRequestData,
   WithdrawReturnDataType,
 } from "../../utils/types.js";
-import { redis } from "@/utils/redis.js";
 
 export const withdrawModel = async (params: {
   earnings: string;
@@ -170,7 +170,7 @@ FOR UPDATE`;
     await tx.company_transaction_table.create({
       data: {
         company_transaction_amount: finalAmount,
-        company_transaction_description: `Withdrawal ${
+        company_transaction_description: `${
           earnings === "PACKAGE" ? "Trading" : "Referral & Matrix"
         } Ongoing.`,
         company_transaction_details: `Account Name: ${accountName}, Account Number: ${accountNumber}`,
@@ -327,10 +327,13 @@ export const updateWithdrawModel = async (params: {
 
     await tx.company_transaction_table.create({
       data: {
-        company_transaction_description: `Withdrawal ${
-          status.slice(0, 1).toUpperCase() + status.slice(1).toLowerCase()
-        } ${note ? `(${note})` : ""}`,
-        company_transaction_details: `Account Name: ${updatedRequest.company_withdrawal_request_bank_name}, Account Number: ${updatedRequest.company_withdrawal_request_account}`,
+        company_transaction_description:
+          status.slice(0, 1).toUpperCase() + status.slice(1).toLowerCase(),
+        company_transaction_details: `${
+          note
+            ? `${note}`
+            : `Account Name: ${updatedRequest.company_withdrawal_request_bank_name}, Account Number: ${updatedRequest.company_withdrawal_request_account}`
+        }`,
         company_transaction_amount:
           status === "APPROVED"
             ? updatedRequest.company_withdrawal_request_withdraw_amount
@@ -769,16 +772,16 @@ export const withdrawHistoryReportPostModel = async (params: {
   const { dateFilter } = params;
 
   const { startDate, endDate } = dateFilter;
-  const cacheKey = `withdrawal-report-${startDate}-${endDate}`
+  const cacheKey = `withdrawal-report-${startDate}-${endDate}`;
 
-  const cachedData = await redis.get(cacheKey)
+  const cachedData = await redis.get(cacheKey);
 
-if(cachedData) {
-  return cachedData as {
-    total_request: number;
-    total_amount: number;
+  if (cachedData) {
+    return cachedData as {
+      total_request: number;
+      total_amount: number;
+    };
   }
-}
 
   const withdrawalData =
     await prisma.company_withdrawal_request_table.aggregate({
