@@ -9,6 +9,7 @@ import type {
   WithdrawalRequestData,
   WithdrawReturnDataType,
 } from "../../utils/types.js";
+import { redis } from "@/utils/redis.js";
 
 export const withdrawModel = async (params: {
   earnings: string;
@@ -768,6 +769,16 @@ export const withdrawHistoryReportPostModel = async (params: {
   const { dateFilter } = params;
 
   const { startDate, endDate } = dateFilter;
+  const cacheKey = `withdrawal-report-${startDate}-${endDate}`
+
+  const cachedData = await redis.get(cacheKey)
+
+if(cachedData) {
+  return cachedData as {
+    total_request: number;
+    total_amount: number;
+  }
+}
 
   const withdrawalData =
     await prisma.company_withdrawal_request_table.aggregate({
@@ -796,6 +807,10 @@ export const withdrawHistoryReportPostModel = async (params: {
       (withdrawalData._sum.company_withdrawal_request_amount || 0) -
       (withdrawalData._sum.company_withdrawal_request_fee || 0),
   };
+
+  await redis.set(cacheKey, JSON.stringify(returnData), {
+    ex: 60 * 5,
+  });
 
   return returnData;
 };

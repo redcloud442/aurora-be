@@ -32,7 +32,7 @@ jobs:
 
       - name: Build Docker image for prod
         run: |
-          docker build -t ghcr.io/redcloud442/mithril:prod-be-${SHORT_SHA} .
+          docker build -t ghcr.io/redcloud442/aurora:prod-be-${SHORT_SHA} .
 
       - name: Verify Docker login
         run: docker info
@@ -42,7 +42,7 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/redcloud442/mithril:prod-be-${SHORT_SHA}
+          docker push ghcr.io/redcloud442/aurora:prod-be-${SHORT_SHA}
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -61,21 +61,21 @@ jobs:
 
       - name: Confirm deployment and container name
         run: |
-          echo "🔍 Listing deployments in namespace 'mithril'..."
-          kubectl get deployment -n mithril
+          echo "🔍 Listing deployments in namespace 'aurora'..."
+          kubectl get deployment -n aurora
 
-          echo "🔍 Checking container names in 'mithril-be'..."
-          kubectl get deployment mithril-be -n mithril -o jsonpath="{.spec.template.spec.containers[*].name}"
+          echo "🔍 Checking container names in 'aurora-be'..."
+          kubectl get deployment aurora-be -n aurora -o jsonpath="{.spec.template.spec.containers[*].name}"
 
       - name: Check RBAC permissions
         run: |
           echo "🔐 Verifying permission to update deployments..."
-          kubectl auth can-i update deployment -n mithril
+          kubectl auth can-i update deployment -n aurora
 
       - name: Deploy to Kubernetes
         run: |
-          echo "🚀 Updating image in deployment 'mithril-be'..."
-          kubectl set image deployment/mithril-be container-zgaabp=ghcr.io/redcloud442/mithril:prod-be-${SHORT_SHA} -n mithril
+          echo "🚀 Updating image in deployment 'aurora-be'..."
+          kubectl set image deployment/aurora-be container-zgaabp=ghcr.io/redcloud442/aurora:prod-be-${SHORT_SHA} -n aurora
 
           echo "⏳ Waiting for rollout to complete..."
-          kubectl rollout status deployment/mithril-be -n mithril
+          kubectl rollout status deployment/aurora-be -n aurora

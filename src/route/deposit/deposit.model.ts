@@ -12,6 +12,7 @@ import {
 import { type DepositFormValues } from "../../schema/schema.js";
 import { getPhilippinesTime } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
+import { redis } from "../../utils/redis.js";
 import type { ReturnDataType, TopUpRequestData } from "../../utils/types.js";
 
 export const depositPostModel = async (params: {
@@ -565,6 +566,18 @@ export const depositReportPostModel = async (params: {
 }) => {
   const { dateFilter } = params;
 
+  const cacheKey = `deposit-report-${dateFilter.year}-${dateFilter.month}`;
+
+  const cachedData = await redis.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData as {
+      monthlyTotal: number;
+      monthlyCount: number;
+      dailyIncome: { date: string; amount: number }[];
+    };
+  }
+
   const monthYearString = `${dateFilter.year}-${dateFilter.month}-01`;
 
   let startDate = parseISO(monthYearString);
@@ -618,11 +631,17 @@ export const depositReportPostModel = async (params: {
     ORDER BY date DESC;
   `;
 
-  return {
+  const returnData = {
     monthlyTotal: depositMonthlyReport._sum.company_deposit_request_amount || 0,
     monthlyCount: depositMonthlyReport._count.company_deposit_request_id || 0,
     dailyIncome: depositDailyIncome,
   };
+
+  await redis.set(cacheKey, JSON.stringify(returnData), {
+    ex: 60 * 5,
+  });
+
+  return returnData;
 };
 
 export const depositUserGetModel = async (params: {

@@ -78,7 +78,7 @@ export const userListController = async (c) => {
         const params = c.get("params");
         const teamMemberProfile = c.get("teamMemberProfile");
         const { data, totalCount } = await userListModel(params, teamMemberProfile);
-        return c.json({ data, totalCount });
+        return c.json({ data, totalCount }, 200);
     }
     catch (error) {
         return c.json({ error: "Internal Server Error" }, { status: 500 });

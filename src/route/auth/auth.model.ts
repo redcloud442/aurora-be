@@ -63,7 +63,7 @@ export const loginModel = async (params: { userName: string; ip: string }) => {
 };
 
 export const loginGetModel = async (userName: string) => {
-  const user = await prisma.user_table.findFirst({
+  const user = await prisma.user_table.findFirstOrThrow({
     where: {
       user_username: {
         equals: userName,
@@ -72,7 +72,7 @@ export const loginGetModel = async (userName: string) => {
     },
   });
 
-  const teamMember = await prisma.company_member_table.findFirst({
+  const teamMember = await prisma.company_member_table.findUnique({
     where: {
       company_member_user_id: user?.user_id,
     },
@@ -161,7 +161,7 @@ export const registerUserModel = async (params: {
     return await prisma.$transaction(async (tx) => {
       const referralCode = await generateUniqueReferralCode(tx);
 
-      const referralLinkURL = `${url}?CODE=${encodeURIComponent(referralCode)}`;
+      const referralLinkURL = `${url}?referralCode=${encodeURIComponent(referralCode)}`;
 
       const user = await tx.user_table.create({
         data: {

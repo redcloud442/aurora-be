@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  previewFeatures = ["multiSchema","views"]
 }
 
 datasource db {
@@ -131,7 +131,7 @@ model company_referral_table {
   @@index([company_referral_from_member_id], name: "idx_company_referral_from_member_id")
 }
 
-model dashboard_earnings_summary {
+view dashboard_earnings_summary {
   member_id              String   @id @map("member_id") @db.Uuid
   total_earnings         Float    @default(0.0) @map("total_earnings")
   total_withdrawals      Float    @default(0.0) @map("total_withdrawals")
@@ -252,6 +252,13 @@ model company_hidden_user_table {
   @@schema("company_schema")
 }
 
+model company_promo_table {
+  company_promo_id String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  company_promo_image String
+
+  @@schema("company_schema")
+}
+
 model package_table {
   package_id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   package_name       String
@@ -310,8 +317,8 @@ model package_earnings_log {
   @@index([package_member_package_id], name: "idx_package_earnings_package_id")
   @@index([package_member_member_id], name: "idx_package_earnings_member_id")
   @@index([package_member_connection_id], name: "idx_package_earnings_connection_id")
-
 }
+
 
 model package_ally_bounty_log {
   package_ally_bounty_log_id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
@@ -364,6 +371,7 @@ model merchant_member_table {
   @@schema("merchant_schema")
 }
 
+
 model error_table {
   error_id                String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   error_message           String
@@ -374,3 +382,5 @@ model error_table {
 
   @@schema("public")
 }
+
+

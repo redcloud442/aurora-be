@@ -500,7 +500,19 @@ export const userListModel = async (
     bannedUser,
   } = params;
 
+  const cacheKey = `user-list-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}-${userRole}-${dateCreated}-${bannedUser}`;
+
+  const cachedData = await redis.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData as {
+      totalCount: number;
+      data: UserRequestdata[];
+    };
+  }
+
   const offset = (page - 1) * limit;
+  
 
   const whereCondition: any = {
     company_member_company_id: teamMemberProfile.company_member_company_id,
@@ -600,6 +612,13 @@ export const userListModel = async (
     user_last_name: entry.user_table.user_last_name || "",
     user_date_created: entry.user_table.user_date_created.toISOString(),
   }));
+
+  await redis.set(cacheKey, JSON.stringify({
+    totalCount,
+    data: formattedData,
+  }), {
+    ex:60,
+  });
 
   return {
     totalCount,

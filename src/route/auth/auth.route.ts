@@ -19,7 +19,7 @@ access.get("/", authGetMiddleware, loginGetController);
 
 access.post("/", authMiddleware, loginController);
 
-access.post("/omnixAccess", authMiddleware, adminController);
+access.post("/auroraAuth", authMiddleware, adminController);
 
 access.post(
   "/register",

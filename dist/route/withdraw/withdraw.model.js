@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { calculateFee, calculateFinalAmount, getPhilippinesTime, } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
+import { redis } from "@/utils/redis.js";
 export const withdrawModel = async (params) => {
     const { earnings, accountNumber, accountName, amount, bank, teamMemberProfile, } = params;
     await prisma.$transaction(async (tx) => {
@@ -485,6 +486,11 @@ export const withdrawHistoryReportPostTotalModel = async (params) => {
 export const withdrawHistoryReportPostModel = async (params) => {
     const { dateFilter } = params;
     const { startDate, endDate } = dateFilter;
+    const cacheKey = `withdrawal-report-${startDate}-${endDate}`;
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        return cachedData;
+    }
     const withdrawalData = await prisma.company_withdrawal_request_table.aggregate({
         where: {
             company_withdrawal_request_date: {
@@ -508,6 +514,9 @@ export const withdrawHistoryReportPostModel = async (params) => {
         total_amount: (withdrawalData._sum.company_withdrawal_request_amount || 0) -
             (withdrawalData._sum.company_withdrawal_request_fee || 0),
     };
+    await redis.set(cacheKey, JSON.stringify(returnData), {
+        ex: 60 * 5,
+    });
     return returnData;
 };
 export const withdrawHideUserModel = async (params) => {

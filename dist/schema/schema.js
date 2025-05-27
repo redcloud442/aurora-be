@@ -392,3 +392,13 @@ export const testimonialGetSchema = z.object({
 export const testimonialPutSchema = z.object({
     id: z.string().uuid(),
 });
+export const bannerPostSchema = z.object({
+    company_promo_image: z.string().min(1),
+});
+export const bannerPutSchema = z.object({
+    company_promo_image: z.string().min(1),
+    id: z.string().uuid(),
+});
+export const bannerDeleteSchema = z.object({
+    id: z.string().uuid(),
+});

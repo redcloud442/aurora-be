@@ -6,6 +6,7 @@ import { supabaseMiddleware } from "./middleware/auth.middleware.js";
 import { errorHandlerMiddleware } from "./middleware/errorMiddleware.js";
 import route from "./route/route.js";
 import { globalRateLimit } from "./utils/redis.js";
+import { supabaseClient } from "./utils/supabase.js";
 const app = new Hono();
 // Apply CORS first, then middleware
 app.use("*", cors({

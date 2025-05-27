@@ -15,7 +15,7 @@ app.use(
     origin: (origin) => {
       const allowedOrigins = [
         "http://localhost:5173",
-        "https://www.omnixglobal.app",
+        "https://www.aurora.app",
       ];
 
       if (!origin || allowedOrigins.includes(origin)) {

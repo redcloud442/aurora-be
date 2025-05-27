@@ -12,6 +12,7 @@ import referral from "./referral/referral.route.js";
 import transaction from "./transaction/transaction.route.js";
 import user from "./user/user.route.js";
 import withdraw from "./withdraw/withdraw.route.js";
+import banner from "./banner/banner.route.js";
 
 const app = new Hono();
 
@@ -60,6 +61,10 @@ app.route("/leaderboard", leaderboard);
 //options route
 app.use("/options/*", protectionMiddleware);
 app.route("/options", options);
+
+//banner route
+app.use("/banner/*", protectionMiddleware);
+app.route("/banner", banner);
 
 app.get("/", (c) => {
   return c.html(`
