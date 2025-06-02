@@ -500,7 +500,8 @@ export const userListModel = async (
     bannedUser,
   } = params;
 
-  const cacheKey = `user-list-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}-${userRole}-${dateCreated}-${bannedUser}`;
+  const version = (await redis.get(`user-list:version`)) || "v1";
+  const cacheKey = `user-list-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}-${userRole}-${dateCreated}-${bannedUser}-${version}`;
 
   const cachedData = await redis.get(cacheKey);
 

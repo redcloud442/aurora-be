@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { invalidateCacheVersion } from "../../utils/function.js";
 import {
   userActiveListModel,
   userChangePasswordModel,
@@ -60,6 +61,8 @@ export const userPatchController = async (c: Context) => {
     const { id } = c.req.param();
 
     await userPatchModel({ memberId: id, action, role, type });
+
+    await invalidateCacheVersion("user-list");
 
     return c.json({ message: "User Updated" });
   } catch (error) {
