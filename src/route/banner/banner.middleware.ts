@@ -1,9 +1,9 @@
+import type { Context, Next } from "hono";
 import {
   bannerDeleteSchema,
   bannerPostSchema,
   bannerPutSchema,
-} from "@/schema/schema.js";
-import type { Context, Next } from "hono";
+} from "../../schema/schema.js";
 import { sendErrorResponse } from "../../utils/function.js";
 import { protectionMemberUser } from "../../utils/protection.js";
 import { rateLimit } from "../../utils/redis.js";

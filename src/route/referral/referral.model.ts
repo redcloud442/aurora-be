@@ -21,11 +21,11 @@ export const referralDirectModelPost = async (params: {
 
   const cacheKey = `referral-direct-${teamMemberProfile.company_member_id}-${page}-${limit}-${search}-${columnAccessor}`;
 
-  // const cachedData = await redis.get(cacheKey);
+  const cachedData = await redis.get(cacheKey);
 
-  // if (cachedData) {
-  //   return cachedData;
-  // }
+  if (cachedData) {
+    return cachedData;
+  }
 
   const offset = Math.max((page - 1) * limit, 0);
 
