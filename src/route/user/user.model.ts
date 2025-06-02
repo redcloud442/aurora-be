@@ -512,7 +512,6 @@ export const userListModel = async (
   }
 
   const offset = (page - 1) * limit;
-  
 
   const whereCondition: any = {
     company_member_company_id: teamMemberProfile.company_member_company_id,
@@ -613,12 +612,16 @@ export const userListModel = async (
     user_date_created: entry.user_table.user_date_created.toISOString(),
   }));
 
-  await redis.set(cacheKey, JSON.stringify({
-    totalCount,
-    data: formattedData,
-  }), {
-    ex:60,
-  });
+  await redis.set(
+    cacheKey,
+    JSON.stringify({
+      totalCount,
+      data: formattedData,
+    }),
+    {
+      ex: 60 * 2,
+    }
+  );
 
   return {
     totalCount,
@@ -636,6 +639,14 @@ export const userActiveListModel = async (params: {
   const { page, limit, search, columnAccessor, isAscendingSort } = params;
 
   const offset = (page - 1) * limit;
+
+  const cacheKey = `user-active-list-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}`;
+
+  const cachedData = await redis.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
 
   const sortBy = isAscendingSort ? "ASC" : "DESC";
 
@@ -658,7 +669,8 @@ export const userActiveListModel = async (params: {
       ut.user_username,
       ut.user_first_name,
       ut.user_last_name,
-      am.company_member_is_active
+      am.company_member_is_active,
+      am.company_member_id
     FROM user_schema.user_table ut
     JOIN company_schema.company_member_table am
       ON ut.user_id = am.company_member_user_id
@@ -685,10 +697,16 @@ export const userActiveListModel = async (params: {
       ${searchCondition}
     `;
 
-  return {
+  const returnData = {
     data: usersWithActiveWallet,
     totalCount: Number(totalCount[0]?.count ?? 0),
   };
+
+  await redis.set(cacheKey, JSON.stringify(returnData), {
+    ex: 60 * 2,
+  });
+
+  return returnData;
 };
 
 export const userChangePasswordModel = async (params: {
@@ -713,6 +731,14 @@ export const userListReinvestedModel = async (params: {
   const { dateFilter, take, skip } = params;
 
   const offset = (skip - 1) * take;
+
+  const cacheKey = `user-list-reinvested-${dateFilter.start}-${dateFilter.end}-${take}-${skip}`;
+
+  const cachedData = await redis.get(cacheKey);
+
+  if (cachedData) {
+    return cachedData;
+  }
 
   const startDate = dateFilter.start
     ? new Date(
@@ -796,7 +822,16 @@ export const userListReinvestedModel = async (params: {
       ) AS total_count
   `;
 
-  return { data, totalCount: Number(totalCount[0]?.count ?? 0) };
+  const returnData = {
+    data,
+    totalCount: Number(totalCount[0]?.count ?? 0),
+  };
+
+  await redis.set(cacheKey, JSON.stringify(returnData), {
+    ex: 60 * 2,
+  });
+
+  return returnData;
 };
 
 export const userTreeModel = async (params: { memberId: string }) => {

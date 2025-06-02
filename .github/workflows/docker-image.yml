@@ -61,7 +61,7 @@ jobs:
 
       - name: Confirm deployment and container name
         run: |
-          echo "🔍 Listing deployments in namespace 'aurora'..."
+          echo "🔍 Listing deployments in namespace 'aurora'... "
           kubectl get deployment -n aurora
 
           echo "🔍 Checking container names in 'aurora-be'..."
@@ -75,7 +75,7 @@ jobs:
       - name: Deploy to Kubernetes
         run: |
           echo "🚀 Updating image in deployment 'aurora-be'..."
-          kubectl set image deployment/aurora-be container-zgaabp=ghcr.io/redcloud442/aurora:prod-be-${SHORT_SHA} -n aurora
+          kubectl set image deployment/aurora-be aurora-be=ghcr.io/redcloud442/aurora:prod-be-${SHORT_SHA} -n aurora
 
           echo "⏳ Waiting for rollout to complete..."
           kubectl rollout status deployment/aurora-be -n aurora

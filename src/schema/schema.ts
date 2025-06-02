@@ -119,11 +119,11 @@ export const depositSchema = z.object({
   amount: z
     .string()
     .trim()
-    .min(3, "Amount is required and must be at least 500 pesos")
+    .min(3, "Amount is required and must be at least 200 pesos")
     .max(6, "Amount must be less than 6 digits")
     .regex(/^\d+$/, "Amount must be a number")
-    .refine((amount) => parseInt(amount, 10) >= 500, {
-      message: "Amount must be at least 500 pesos",
+    .refine((amount) => parseInt(amount, 10) >= 200, {
+      message: "Amount must be at least 200 pesos",
     }),
   topUpMode: z.string().min(1, "Top up mode is required"),
   accountName: z.string().min(1, "Field is required"),
@@ -357,12 +357,12 @@ export const merchantBankSchema = z.object({
 //withdraw schema
 
 export const withdrawPostSchema = z.object({
-  earnings: z.enum(["PACKAGE", "REFERRAL", "WINNING"]),
+  earnings: z.enum(["PACKAGE", "REFERRAL"]),
   amount: z
     .string()
-    .min(3, "Minimum amount is required atleast 500 pesos")
-    .refine((amount) => parseInt(amount.replace(/,/g, ""), 10) >= 500, {
-      message: "Amount must be at least 500 pesos",
+    .min(3, "Minimum amount is required atleast 100 pesos")
+    .refine((amount) => parseInt(amount.replace(/,/g, ""), 10) >= 100, {
+      message: "Amount must be at least 100 pesos",
     }),
   bank: z.string().min(1, "Please select a bank"),
   accountName: z
@@ -489,7 +489,6 @@ export const testimonialPutSchema = z.object({
   id: z.string().uuid(),
 });
 
-
 export const bannerPostSchema = z.object({
   company_promo_image: z.string().min(1),
 });
@@ -502,5 +501,3 @@ export const bannerPutSchema = z.object({
 export const bannerDeleteSchema = z.object({
   id: z.string().uuid(),
 });
-
-

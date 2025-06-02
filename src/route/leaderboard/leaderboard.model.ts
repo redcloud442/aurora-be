@@ -1,5 +1,5 @@
 import prisma from "../../utils/prisma.js";
-
+import { redis } from "../../utils/redis.js";
 export const leaderboardPostModel = async (params: {
   leaderBoardType: "DIRECT" | "INDIRECT";
   limit: number;
@@ -7,6 +7,12 @@ export const leaderboardPostModel = async (params: {
 }) => {
   const { leaderBoardType, limit, page } = params;
   const offset = (page - 1) * limit;
+
+  const cacheKey = `leaderboard-${leaderBoardType}-${limit}-${page}`;
+  const cachedData = await redis.get(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
 
   // Get total count of distinct members in the leaderboard
   const totalCount =
@@ -59,8 +65,14 @@ export const leaderboardPostModel = async (params: {
     totalReferral: Number(entry.totalreferral) || 0,
   }));
 
-  return {
+  const returndata = {
     totalCount: Number(totalCount),
     data: leaderboardWithUserDetails,
   };
+
+  await redis.set(cacheKey, JSON.stringify(leaderboardWithUserDetails), {
+    ex: 60 * 2,
+  });
+
+  return returndata;
 };

@@ -86,13 +86,13 @@ export const merchantPatchModel = async (params: {
 
   const result = await prisma.$transaction(async (tx) => {
     const merchant = await tx.merchant_member_table.findFirst({
-      where: { merchant_member_id: memberId },
+      where: { merchant_member_merchant_id: memberId },
     });
 
     if (!merchant) throw new Error("Merchant not found");
 
     await tx.merchant_member_table.update({
-      where: { merchant_member_id: memberId },
+      where: { merchant_member_id: merchant.merchant_member_id },
       data: {
         merchant_member_balance: {
           increment: amount,

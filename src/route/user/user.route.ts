@@ -38,11 +38,7 @@ user.post("/", userPostMiddleware, userPostController);
 
 user.put("/", userPutMiddleware, userPutController);
 
-user.get("/", userGetMiddleware, userGetController);
-
 user.patch("/:id", userPatchMiddleware, userPatchController);
-
-user.get("/:id", userGetMiddleware, userGetController);
 
 user.get("/search", userGetSearchMiddleware, userGetSearchController);
 
@@ -51,6 +47,10 @@ user.post("/:id/referral", userReferralMiddleware, userReferralController);
 user.put("/:id", userProfilePutMiddleware, userProfilePutController);
 
 user.get("/:id/tree", userTreeMiddleware, userTreeController);
+
+user.get("/", userGetMiddleware, userGetController);
+
+user.get("/:id", userGetMiddleware, userGetController);
 
 user.put(
   "/:id/change-password",
