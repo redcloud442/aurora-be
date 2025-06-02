@@ -95,7 +95,7 @@ export const referralDirectModelPost = async (params: {
     totalCount: Number(totalCount[0]?.count || 0),
   };
 
-  await redis.set(cacheKey, JSON.stringify(returnData), { ex: 300 });
+  await redis.set(cacheKey, JSON.stringify(returnData), { ex: 60 * 2 });
 
   return returnData;
 };
@@ -251,7 +251,7 @@ export const referralIndirectModelPost = async (params: {
     totalCount: Number(totalCountResult[0]?.count || 0),
   };
 
-  await redis.set(cacheKey, returnData, { ex: 300 });
+  await redis.set(cacheKey, returnData, { ex: 60 * 2 });
 
   return returnData;
 };
