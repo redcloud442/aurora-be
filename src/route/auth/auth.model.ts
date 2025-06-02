@@ -161,7 +161,7 @@ export const registerUserModel = async (params: {
     return await prisma.$transaction(async (tx) => {
       const referralCode = await generateUniqueReferralCode(tx);
 
-      const referralLinkURL = `${url}?AURORAREFER=${encodeURIComponent(
+      const referralLinkURL = `https://www.auroraphil.com/auth/register?AURORAREFER=${encodeURIComponent(
         referralCode
       )}`;
 
