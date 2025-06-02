@@ -3,11 +3,11 @@ import { Hono } from "hono";
 import {
   packageGetController,
   packagePostController,
+  packageReinvestmentPostController,
   packagesClaimPostController,
   packagesCreatePostController,
   packagesGetAdminController,
   packagesListPostController,
-  packageReinvestmentPostController,
   packagesUpdatePutController,
 } from "./package.controller.js";
 import {
