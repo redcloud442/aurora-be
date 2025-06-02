@@ -61,7 +61,7 @@ jobs:
 
       - name: Confirm deployment and container name
         run: |
-          echo "🔍 Listing deployments in namespace 'aurora'... "
+          echo "🔍 Listing deployments in namespace 'aurora'...... "
           kubectl get deployment -n aurora
 
           echo "🔍 Checking container names in 'aurora-be'..."
