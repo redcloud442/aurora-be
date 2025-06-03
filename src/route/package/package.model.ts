@@ -183,7 +183,7 @@ export const packagePostModel = async (params: {
         });
 
         baseKeys = batch.map((ref) => {
-          return `${ref.level > 1 ? "indirect-referral" : "direct-referral"}:${
+          return `${ref.level > 1 ? "referral-indirect" : "referral-direct"}:${
             ref.referrerId
           }`;
         });
