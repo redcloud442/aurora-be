@@ -188,7 +188,7 @@ export const packagePostModel = async (params: {
           const isIndirect = ref.level > 1;
 
           baseKeys.push(
-            `referral-${isIndirect ? "indirect" : "direct"}:${referrerId}`
+            `${isIndirect ? "indirect" : "direct"}-referral:${referrerId}`
           );
           transactionKeys.push(`transaction:${referrerId}:EARNINGS`);
           referrerKeys.push(`user-model-get-${referrerId}`);
