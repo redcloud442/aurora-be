@@ -103,6 +103,7 @@ export const packagePostModel = async (params: {
     let bountyLogs: Prisma.package_ally_bounty_logCreateManyInput[] = [];
     let baseKeys: string[] = [];
     let transactionKeys: string[] = [];
+    let referrerKeys: string[] = [];
 
     let transactionLogs: Prisma.company_transaction_tableCreateManyInput[] = [];
     const connectionData = await tx.package_member_connection_table.create({
@@ -192,6 +193,10 @@ export const packagePostModel = async (params: {
           return `transaction:${ref.referrerId}:EARNINGS`;
         });
 
+        referrerKeys = batch.map((ref) => {
+          return `user-model-get-${ref.referrerId}`;
+        });
+
         await Promise.all(
           batch.map(async (ref) => {
             if (!ref.referrerId) return;
@@ -226,7 +231,7 @@ export const packagePostModel = async (params: {
     }
 
     if (baseKeys.length > 0) {
-      const keys = [...baseKeys, ...transactionKeys];
+      const keys = [...baseKeys, ...transactionKeys, ...referrerKeys];
       await invalidateMultipleCacheVersions(keys);
     }
 
