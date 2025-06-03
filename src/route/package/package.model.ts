@@ -183,19 +183,16 @@ export const packagePostModel = async (params: {
           };
         });
 
-        baseKeys = batch.map((ref) => {
-          return `${ref.level > 1 ? "referral-indirect" : "referral-direct"}:${
-            ref.referrerId
-          }`;
-        });
+        for (const ref of batch) {
+          const referrerId = ref.referrerId;
+          const isIndirect = ref.level > 1;
 
-        transactionKeys = batch.map((ref) => {
-          return `transaction:${ref.referrerId}:EARNINGS`;
-        });
-
-        referrerKeys = batch.map((ref) => {
-          return `user-model-get-${ref.referrerId}`;
-        });
+          baseKeys.push(
+            `referral-${isIndirect ? "indirect" : "direct"}:${referrerId}`
+          );
+          transactionKeys.push(`transaction:${referrerId}:EARNINGS`);
+          referrerKeys.push(`user-model-get-${referrerId}`);
+        }
 
         await Promise.all(
           batch.map(async (ref) => {
