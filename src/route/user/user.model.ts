@@ -295,7 +295,7 @@ export const userModelGet = async ({ memberId }: { memberId: string }) => {
   };
 
   await redis.set(cacheKey, JSON.stringify(returnData), {
-    ex: 600,
+    ex: 60,
   });
 
   return returnData;
@@ -620,7 +620,7 @@ export const userListModel = async (
       data: formattedData,
     }),
     {
-      ex: 60 * 2,
+      ex: 60,
     }
   );
 
@@ -704,7 +704,7 @@ export const userActiveListModel = async (params: {
   };
 
   await redis.set(cacheKey, JSON.stringify(returnData), {
-    ex: 60 * 2,
+    ex: 60,
   });
 
   return returnData;
@@ -829,7 +829,7 @@ export const userListReinvestedModel = async (params: {
   };
 
   await redis.set(cacheKey, JSON.stringify(returnData), {
-    ex: 60 * 2,
+    ex: 60,
   });
 
   return returnData;
