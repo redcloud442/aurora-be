@@ -4,6 +4,7 @@ import {
   type user_table,
 } from "@prisma/client";
 import {
+  invalidateMultipleCache,
   invalidateMultipleCacheVersions,
   toNonNegative,
 } from "../../utils/function.js";
@@ -228,8 +229,11 @@ export const packagePostModel = async (params: {
     }
 
     if (baseKeys.length > 0) {
-      const keys = [...baseKeys, ...transactionKeys, ...referrerKeys];
-      await invalidateMultipleCacheVersions(keys);
+      const keys = [...baseKeys, ...transactionKeys];
+      await Promise.all([
+        invalidateMultipleCacheVersions(keys),
+        invalidateMultipleCache(referrerKeys),
+      ]);
     }
 
     if (!teamMemberProfile?.company_member_is_active) {
