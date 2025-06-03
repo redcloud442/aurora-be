@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { packageGetController, packagePostController, packagesClaimPostController, packagesCreatePostController, packagesGetAdminController, packagesListPostController, packageReinvestmentPostController, packagesUpdatePutController, } from "./package.controller.js";
+import { packageGetController, packagePostController, packageReinvestmentPostController, packagesClaimPostController, packagesCreatePostController, packagesGetAdminController, packagesListPostController, packagesUpdatePutController, } from "./package.controller.js";
 import { packageCreatePostMiddleware, packageGetMiddleware, packagePostMiddleware, packagesClaimPostMiddleware, packagesGetListMiddleware, packageUpdatePutMiddleware, } from "./package.middleware.js";
 const packages = new Hono();
 packages.post("/", packagePostMiddleware, packagePostController);

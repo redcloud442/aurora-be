@@ -34,6 +34,6 @@ export const bannerGetModel = async () => {
             company_promo_id: "desc",
         },
     });
-    await redis.set("banner", JSON.stringify(banner), { ex: 60 * 60 * 24 * 30 });
+    await redis.set("banner", JSON.stringify(banner), { ex: 60 * 10 });
     return banner;
 };

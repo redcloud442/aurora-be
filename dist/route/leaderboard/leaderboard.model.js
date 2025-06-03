@@ -1,7 +1,13 @@
 import prisma from "../../utils/prisma.js";
+import { redis } from "../../utils/redis.js";
 export const leaderboardPostModel = async (params) => {
     const { leaderBoardType, limit, page } = params;
     const offset = (page - 1) * limit;
+    const cacheKey = `leaderboard-${leaderBoardType}-${limit}-${page}`;
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        return cachedData;
+    }
     // Get total count of distinct members in the leaderboard
     const totalCount = (await prisma.$queryRaw `
         SELECT COUNT(DISTINCT package_ally_bounty_member_id) AS count
@@ -34,8 +40,12 @@ export const leaderboardPostModel = async (params) => {
         totalAmount: Number(entry.totalamount) || 0,
         totalReferral: Number(entry.totalreferral) || 0,
     }));
-    return {
+    const returndata = {
         totalCount: Number(totalCount),
         data: leaderboardWithUserDetails,
     };
+    await redis.set(cacheKey, JSON.stringify(leaderboardWithUserDetails), {
+        ex: 60 * 2,
+    });
+    return returndata;
 };

@@ -3,7 +3,10 @@ import {
   type company_member_table,
   type user_table,
 } from "@prisma/client";
-import { toNonNegative } from "../../utils/function.js";
+import {
+  invalidateMultipleCacheVersions,
+  toNonNegative,
+} from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
 import { redis } from "../../utils/redis.js";
 
@@ -98,6 +101,8 @@ export const packagePostModel = async (params: {
     );
 
     let bountyLogs: Prisma.package_ally_bounty_logCreateManyInput[] = [];
+    let baseKeys: string[] = [];
+    let transactionKeys: string[] = [];
 
     let transactionLogs: Prisma.company_transaction_tableCreateManyInput[] = [];
     const connectionData = await tx.package_member_connection_table.create({
@@ -177,6 +182,16 @@ export const packagePostModel = async (params: {
           };
         });
 
+        baseKeys = batch.map((ref) => {
+          return `${ref.level > 1 ? "indirect-referral" : "direct-referral"}:${
+            ref.referrerId
+          }`;
+        });
+
+        transactionKeys = batch.map((ref) => {
+          return `transaction:${ref.referrerId}:EARNINGS`;
+        });
+
         await Promise.all(
           batch.map(async (ref) => {
             if (!ref.referrerId) return;
@@ -208,6 +223,11 @@ export const packagePostModel = async (params: {
       await tx.company_transaction_table.createMany({
         data: transactionLogs,
       });
+    }
+
+    if (baseKeys.length > 0) {
+      const keys = [...baseKeys, ...transactionKeys];
+      await invalidateMultipleCacheVersions(keys);
     }
 
     if (!teamMemberProfile?.company_member_is_active) {

@@ -142,6 +142,17 @@ export const invalidateCacheVersion = async (baseKey: string) => {
   await redis.incr(versionKey);
 };
 
+export const invalidateMultipleCacheVersions = async (baseKeys: string[]) => {
+  const pipeline = redis.multi();
+
+  baseKeys.forEach((baseKey) => {
+    const versionKey = `${baseKey}:version`;
+    pipeline.incr(versionKey);
+  });
+
+  await pipeline.exec();
+};
+
 export const invalidateCache = async (key: string) => {
   await redis.del(key);
 };

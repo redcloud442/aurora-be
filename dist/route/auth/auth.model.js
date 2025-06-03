@@ -107,7 +107,7 @@ export const registerUserModel = async (params) => {
         const DEFAULT_COMPANY_ID = "a1b9ceb9-cb09-4c09-832d-6e5a017d048b";
         return await prisma.$transaction(async (tx) => {
             const referralCode = await generateUniqueReferralCode(tx);
-            const referralLinkURL = `${url}?referralCode=${encodeURIComponent(referralCode)}`;
+            const referralLinkURL = `https://www.auroraphil.com/auth/register?AURORAREFER=${encodeURIComponent(referralCode)}`;
             const user = await tx.user_table.create({
                 data: {
                     user_id: userId,
@@ -117,12 +117,19 @@ export const registerUserModel = async (params) => {
                     user_username: userName,
                     user_bot_field: botField === "true" ? true : false,
                     user_phone_number: phoneNumber,
+                    user_history_log: {
+                        create: {
+                            user_ip_address: ip,
+                        },
+                    },
                     company_member_table: {
                         create: {
                             company_member_role: "MEMBER",
                             company_member_company_id: DEFAULT_COMPANY_ID,
                             company_earnings_table: {
-                                create: {},
+                                create: {
+                                    company_combined_earnings: 0,
+                                },
                             },
                             company_referral_link_table: {
                                 create: {

@@ -1,5 +1,5 @@
 import { Prisma, } from "@prisma/client";
-import { toNonNegative } from "../../utils/function.js";
+import { invalidateMultipleCacheVersions, toNonNegative, } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
 import { redis } from "../../utils/redis.js";
 export const packagePostModel = async (params) => {
@@ -43,6 +43,8 @@ export const packagePostModel = async (params) => {
         const packageAmountEarnings = new Prisma.Decimal(requestedAmount).mul(packagePercentage);
         const referralChain = generateReferralChain(referralData?.company_referral_hierarchy ?? null, teamMemberProfile.company_member_id, 100);
         let bountyLogs = [];
+        let baseKeys = [];
+        let transactionKeys = [];
         let transactionLogs = [];
         const connectionData = await tx.package_member_connection_table.create({
             data: {
@@ -107,6 +109,12 @@ export const packagePostModel = async (params) => {
                         company_transaction_description: ref.level === 1 ? "Referral" : `Matrix Level ${ref.level}`,
                     };
                 });
+                baseKeys = batch.map((ref) => {
+                    return `${ref.level > 1 ? "indirect-referral" : "direct-referral"}:${ref.referrerId}`;
+                });
+                transactionKeys = batch.map((ref) => {
+                    return `transaction:${ref.referrerId}:EARNINGS`;
+                });
                 await Promise.all(batch.map(async (ref) => {
                     if (!ref.referrerId)
                         return;
@@ -132,6 +140,10 @@ export const packagePostModel = async (params) => {
             await tx.company_transaction_table.createMany({
                 data: transactionLogs,
             });
+        }
+        if (baseKeys.length > 0) {
+            const keys = [...baseKeys, ...transactionKeys];
+            await invalidateMultipleCacheVersions(keys);
         }
         if (!teamMemberProfile?.company_member_is_active) {
             await tx.company_member_table.update({
@@ -557,10 +569,10 @@ function generateReferralChain(hierarchy, teamMemberId, maxDepth = 100) {
 function getBonusPercentage(level) {
     const bonusMap = {
         1: 10,
-        2: 2,
-        3: 2,
+        2: 1.5,
+        3: 1.5,
         4: 1.5,
-        5: 1.5,
+        5: 1,
         6: 1,
         7: 1,
         8: 1,

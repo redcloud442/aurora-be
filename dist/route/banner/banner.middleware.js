@@ -1,4 +1,4 @@
-import { bannerDeleteSchema, bannerPostSchema, bannerPutSchema, } from "@/schema/schema.js";
+import { bannerDeleteSchema, bannerPostSchema, bannerPutSchema, } from "../../schema/schema.js";
 import { sendErrorResponse } from "../../utils/function.js";
 import { protectionMemberUser } from "../../utils/protection.js";
 import { rateLimit } from "../../utils/redis.js";

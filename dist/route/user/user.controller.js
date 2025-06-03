@@ -1,3 +1,4 @@
+import { invalidateCacheVersion } from "../../utils/function.js";
 import { userActiveListModel, userChangePasswordModel, userGenerateLinkModel, userGetSearchModel, userListModel, userListReinvestedModel, userModelGet, userModelPost, userModelPut, userPatchModel, userProfileModelPut, userReferralModel, userSponsorModel, userTreeModel, } from "./user.model.js";
 export const userPutController = async (c) => {
     try {
@@ -36,6 +37,7 @@ export const userPatchController = async (c) => {
         const { action, role, type } = await c.req.json();
         const { id } = c.req.param();
         await userPatchModel({ memberId: id, action, role, type });
+        await invalidateCacheVersion("user-list");
         return c.json({ message: "User Updated" });
     }
     catch (error) {

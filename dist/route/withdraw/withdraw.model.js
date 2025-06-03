@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { calculateFee, calculateFinalAmount, getPhilippinesTime, } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
-import { redis } from "@/utils/redis.js";
+import { redis } from "../../utils/redis.js";
 export const withdrawModel = async (params) => {
     const { earnings, accountNumber, accountName, amount, bank, teamMemberProfile, } = params;
     await prisma.$transaction(async (tx) => {
@@ -95,7 +95,7 @@ FOR UPDATE`;
         await tx.company_transaction_table.create({
             data: {
                 company_transaction_amount: finalAmount,
-                company_transaction_description: `Withdrawal ${earnings === "PACKAGE" ? "Trading" : "Referral & Matrix"} Ongoing.`,
+                company_transaction_description: `${earnings === "PACKAGE" ? "Trading" : "Referral & Matrix"} Ongoing.`,
                 company_transaction_details: `Account Name: ${accountName}, Account Number: ${accountNumber}`,
                 company_transaction_member_id: teamMemberProfile.company_member_id,
                 company_transaction_type: "WITHDRAWAL",
@@ -200,8 +200,10 @@ export const updateWithdrawModel = async (params) => {
         }
         await tx.company_transaction_table.create({
             data: {
-                company_transaction_description: `Withdrawal ${status.slice(0, 1).toUpperCase() + status.slice(1).toLowerCase()} ${note ? `(${note})` : ""}`,
-                company_transaction_details: `Account Name: ${updatedRequest.company_withdrawal_request_bank_name}, Account Number: ${updatedRequest.company_withdrawal_request_account}`,
+                company_transaction_description: status.slice(0, 1).toUpperCase() + status.slice(1).toLowerCase(),
+                company_transaction_details: `${note
+                    ? `${note}`
+                    : `Account Name: ${updatedRequest.company_withdrawal_request_bank_name}, Account Number: ${updatedRequest.company_withdrawal_request_account}`}`,
                 company_transaction_amount: status === "APPROVED"
                     ? updatedRequest.company_withdrawal_request_withdraw_amount
                     : updatedRequest.company_withdrawal_request_amount,

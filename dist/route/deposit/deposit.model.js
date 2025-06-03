@@ -68,22 +68,6 @@ export const depositPutModel = async (params) => {
     if (!merchant && teamMemberProfile.company_member_role === "MERCHANT")
         throw new Error("Merchant not found.");
     const data = await prisma.$transaction(async (tx) => {
-        const existingDeposit = await prisma.company_deposit_request_table.findFirst({
-            where: {
-                company_deposit_request_member_id: teamMemberProfile.company_member_id,
-                company_deposit_request_status: "PENDING",
-            },
-            take: 1,
-            orderBy: {
-                company_deposit_request_date: "desc",
-            },
-            select: {
-                company_deposit_request_id: true,
-            },
-        });
-        if (existingDeposit) {
-            throw new Error("You cannot make a new deposit request.");
-        }
         const existingRequest = await tx.company_deposit_request_table.findUnique({
             where: {
                 company_deposit_request_id: requestId,
@@ -106,8 +90,10 @@ export const depositPutModel = async (params) => {
         });
         await tx.company_transaction_table.create({
             data: {
-                company_transaction_description: `Deposit ${status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()} ${note ? `(${note})` : ""}`,
-                company_transaction_details: `Account Name: ${updatedRequest.company_deposit_request_name}, Account Number: ${updatedRequest.company_deposit_request_account}`,
+                company_transaction_description: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase(),
+                company_transaction_details: `${note
+                    ? `${note}`
+                    : `Account Name: ${updatedRequest.company_deposit_request_name}, Account Number: ${updatedRequest.company_deposit_request_account}`}`,
                 company_transaction_amount: updatedRequest.company_deposit_request_amount,
                 company_transaction_member_id: updatedRequest.company_deposit_request_member_id,
                 company_transaction_type: "DEPOSIT",

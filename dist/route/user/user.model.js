@@ -244,7 +244,7 @@ export const userModelGet = async ({ memberId }) => {
         actions,
     };
     await redis.set(cacheKey, JSON.stringify(returnData), {
-        ex: 600,
+        ex: 60,
     });
     return returnData;
 };
@@ -389,7 +389,8 @@ export const userGenerateLinkModel = async (params) => {
 };
 export const userListModel = async (params, teamMemberProfile) => {
     const { page, limit, search, columnAccessor, isAscendingSort, userRole, dateCreated, bannedUser, } = params;
-    const cacheKey = `user-list-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}-${userRole}-${dateCreated}-${bannedUser}`;
+    const version = (await redis.get(`user-list:version`)) || "v1";
+    const cacheKey = `user-list-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}-${userRole}-${dateCreated}-${bannedUser}-${version}`;
     const cachedData = await redis.get(cacheKey);
     if (cachedData) {
         return cachedData;
@@ -497,6 +498,11 @@ export const userListModel = async (params, teamMemberProfile) => {
 export const userActiveListModel = async (params) => {
     const { page, limit, search, columnAccessor, isAscendingSort } = params;
     const offset = (page - 1) * limit;
+    const cacheKey = `user-active-list-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}`;
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        return cachedData;
+    }
     const sortBy = isAscendingSort ? "ASC" : "DESC";
     const orderBy = columnAccessor
         ? Prisma.sql `ORDER BY ${Prisma.raw(columnAccessor)} ${Prisma.raw(sortBy)}`
@@ -516,7 +522,8 @@ export const userActiveListModel = async (params) => {
       ut.user_username,
       ut.user_first_name,
       ut.user_last_name,
-      am.company_member_is_active
+      am.company_member_is_active,
+      am.company_member_id
     FROM user_schema.user_table ut
     JOIN company_schema.company_member_table am
       ON ut.user_id = am.company_member_user_id
@@ -541,10 +548,14 @@ export const userActiveListModel = async (params) => {
       ae.company_package_earnings > 0
       ${searchCondition}
     `;
-    return {
+    const returnData = {
         data: usersWithActiveWallet,
         totalCount: Number(totalCount[0]?.count ?? 0),
     };
+    await redis.set(cacheKey, JSON.stringify(returnData), {
+        ex: 60,
+    });
+    return returnData;
 };
 export const userChangePasswordModel = async (params) => {
     const { password, userId } = params;
@@ -555,6 +566,11 @@ export const userChangePasswordModel = async (params) => {
 export const userListReinvestedModel = async (params) => {
     const { dateFilter, take, skip } = params;
     const offset = (skip - 1) * take;
+    const cacheKey = `user-list-reinvested-${dateFilter.start}-${dateFilter.end}-${take}-${skip}`;
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+        return cachedData;
+    }
     const startDate = dateFilter.start
         ? new Date(getPhilippinesTime(new Date(dateFilter.start), "start")).toISOString()
         : getPhilippinesTime(new Date(), "start");
@@ -616,7 +632,14 @@ export const userListReinvestedModel = async (params) => {
             u.user_last_name
       ) AS total_count
   `;
-    return { data, totalCount: Number(totalCount[0]?.count ?? 0) };
+    const returnData = {
+        data,
+        totalCount: Number(totalCount[0]?.count ?? 0),
+    };
+    await redis.set(cacheKey, JSON.stringify(returnData), {
+        ex: 60,
+    });
+    return returnData;
 };
 export const userTreeModel = async (params) => {
     const { memberId } = params;

@@ -19,7 +19,12 @@ export const referralDirectModelPost = async (params: {
     teamMemberProfile,
   } = params;
 
-  const cacheKey = `referral-direct-${teamMemberProfile.company_member_id}-${page}-${limit}-${search}-${columnAccessor}`;
+  const version =
+    (await redis.get(
+      `direct-referral:${teamMemberProfile.company_member_id}:version`
+    )) || "v1";
+
+  const cacheKey = `referral-direct-${teamMemberProfile.company_member_id}-${page}-${limit}-${search}-${columnAccessor}-${version}`;
 
   const cachedData = await redis.get(cacheKey);
 
@@ -95,7 +100,7 @@ export const referralDirectModelPost = async (params: {
     totalCount: Number(totalCount[0]?.count || 0),
   };
 
-  await redis.set(cacheKey, JSON.stringify(returnData), { ex: 60 });
+  await redis.set(cacheKey, JSON.stringify(returnData), { ex: 60 * 5 });
 
   return returnData;
 };
@@ -117,7 +122,12 @@ export const referralIndirectModelPost = async (params: {
     teamMemberProfile,
   } = params;
 
-  const cacheKey = `referral-indirect-${teamMemberProfile.company_member_id}-${page}-${limit}-${search}-${columnAccessor}-${isAscendingSort}`;
+  const version =
+    (await redis.get(
+      `indirect-referral:${teamMemberProfile.company_member_id}:version`
+    )) || "v1";
+
+  const cacheKey = `referral-indirect-${teamMemberProfile.company_member_id}-${page}-${limit}-${search}-${columnAccessor}-${version}`;
 
   const cachedData = await redis.get(cacheKey);
 
@@ -251,7 +261,7 @@ export const referralIndirectModelPost = async (params: {
     totalCount: Number(totalCountResult[0]?.count || 0),
   };
 
-  await redis.set(cacheKey, JSON.stringify(returnData), { ex: 60 });
+  await redis.set(cacheKey, JSON.stringify(returnData), { ex: 60 * 5 });
 
   return returnData;
 };
