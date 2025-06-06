@@ -228,6 +228,12 @@ export const userModelGet = async ({ memberId }: { memberId: string }) => {
             company_member_is_active: true,
             company_member_date_created: true,
             company_member_date_updated: true,
+            merchant_member_table: {
+              select: {
+                merchant_member_id: true,
+                merchant_member_balance: true,
+              },
+            },
             dashboard_earnings_summary: {
               select: {
                 direct_referral_amount: true,
