@@ -2,6 +2,7 @@ import type { Context, Next } from "hono";
 import {
   userChangePasswordSchema,
   userGenerateLinkSchema,
+  userGetIdSchema,
   userGetReferralSchema,
   userGetSearchSchema,
   userListReinvestedSchema,
@@ -122,6 +123,46 @@ export const userGetMiddleware = async (c: Context, next: Next) => {
     return sendErrorResponse("Too Many Requests", 429);
   }
 
+  c.set("teamMemberProfile", teamMemberProfile);
+
+  await next();
+};
+
+export const userGetIdMiddleware = async (c: Context, next: Next) => {
+  const user = c.get("user");
+
+  const response = await protectionMemberUser(user);
+
+  if (response instanceof Response) {
+    return response;
+  }
+
+  const { teamMemberProfile } = response;
+
+  if (!teamMemberProfile) {
+    return sendErrorResponse("Unauthorized", 401);
+  }
+
+  const isAllowed = await rateLimit(
+    `rate-limit:${teamMemberProfile.company_member_id}:user-get`,
+    100,
+    "1m",
+    c
+  );
+
+  if (!isAllowed) {
+    return sendErrorResponse("Too Many Requests", 429);
+  }
+
+  const { id } = c.req.param();
+
+  const validate = userGetIdSchema.safeParse({ id });
+
+  if (!validate.success) {
+    return sendErrorResponse("Invalid Request", 400);
+  }
+
+  c.set("params", validate.data);
   c.set("teamMemberProfile", teamMemberProfile);
 
   await next();

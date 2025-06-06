@@ -438,7 +438,7 @@ export const userSponsorModel = async (params: { userId: string }) => {
         ON am2.company_member_id = art.company_referral_from_member_id
       JOIN user_schema.user_table ut2
         ON ut2.user_id = am2.company_member_user_id
-      WHERE ut.user_id = ${userId}::uuid
+      WHERE am.company_member_id = ${userId}::uuid
   `;
 
   if (!user) {

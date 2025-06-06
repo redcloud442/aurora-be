@@ -4,6 +4,7 @@ import {
   userChangePasswordController,
   userGenerateLinkController,
   userGetController,
+  userGetIdController,
   userGetSearchController,
   userListController,
   userListReinvestedController,
@@ -19,6 +20,7 @@ import {
   userActiveListMiddleware,
   userChangePasswordMiddleware,
   userGenerateLinkMiddleware,
+  userGetIdMiddleware,
   userGetMiddleware,
   userGetSearchMiddleware,
   userListMiddleware,
@@ -48,9 +50,9 @@ user.put("/:id", userProfilePutMiddleware, userProfilePutController);
 
 user.get("/:id/tree", userTreeMiddleware, userTreeController);
 
-user.get("/", userGetMiddleware, userGetController);
+user.get("/:id", userGetIdMiddleware, userGetIdController);
 
-user.get("/:id", userGetMiddleware, userGetController);
+user.get("/", userGetMiddleware, userGetController);
 
 user.put(
   "/:id/change-password",

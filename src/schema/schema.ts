@@ -508,3 +508,7 @@ export const bannerPutSchema = z.object({
 export const bannerDeleteSchema = z.object({
   id: z.string().uuid(),
 });
+
+export const userGetIdSchema = z.object({
+  id: z.string().uuid(),
+});
