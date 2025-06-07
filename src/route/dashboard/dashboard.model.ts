@@ -274,19 +274,41 @@ export const dashboardGetModel = async () => {
     return cachedData;
   }
 
-  const [totalActivatedPackage, numberOfRegisteredUser, totalActivatedUser] =
-    await prisma.$transaction([
-      prisma.package_member_connection_table.count(),
-      prisma.company_member_table.count(),
-      prisma.company_member_table.count({
-        where: { company_member_is_active: true },
-      }),
-    ]);
+  const currentDate = new Date();
+  const startDate = getPhilippinesTime(currentDate, "start");
+  const endDate = getPhilippinesTime(currentDate, "end");
+
+  const [
+    totalActivatedPackage,
+    numberOfRegisteredUser,
+    totalActivatedUser,
+    totalPendingWithdrawal,
+  ] = await prisma.$transaction([
+    prisma.package_member_connection_table.count(),
+    prisma.company_member_table.count(),
+    prisma.company_member_table.count({
+      where: { company_member_is_active: true },
+    }),
+    prisma.company_withdrawal_request_table.aggregate({
+      _sum: {
+        company_withdrawal_request_amount: true,
+      },
+      where: {
+        company_withdrawal_request_status: "PENDING",
+        company_withdrawal_request_date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    }),
+  ]);
 
   const response = {
     numberOfRegisteredUser,
     totalActivatedPackage,
     totalActivatedUser,
+    totalWithdrawalForTomorrow:
+      totalPendingWithdrawal._sum.company_withdrawal_request_amount || 0,
   };
 
   await redis.set(cacheKey, JSON.stringify(response), { ex: 60 * 5 });
