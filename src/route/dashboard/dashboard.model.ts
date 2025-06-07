@@ -291,7 +291,7 @@ export const dashboardGetModel = async () => {
     }),
     prisma.company_withdrawal_request_table.aggregate({
       _sum: {
-        company_withdrawal_request_amount: true,
+        company_withdrawal_request_withdraw_amount: true,
       },
       where: {
         company_withdrawal_request_status: "PENDING",
@@ -308,7 +308,8 @@ export const dashboardGetModel = async () => {
     totalActivatedPackage,
     totalActivatedUser,
     totalWithdrawalForTomorrow:
-      totalPendingWithdrawal._sum.company_withdrawal_request_amount || 0,
+      totalPendingWithdrawal._sum.company_withdrawal_request_withdraw_amount ||
+      0,
   };
 
   await redis.set(cacheKey, JSON.stringify(response), { ex: 60 * 5 });
