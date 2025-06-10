@@ -16,12 +16,7 @@ export async function rateLimit(
   maxRequests: number,
   timeWindow: "10s" | "1m" | "5m" | "1h",
   c: Context
-): Promise<{
-  success: boolean;
-  remaining: number;
-  reset: number;
-  limit: number;
-}> {
+): Promise<boolean> {
   const ip =
     c.req.header("cf-connecting-ip") ||
     c.req.header("x-forwarded-for") ||
@@ -46,12 +41,7 @@ export async function rateLimit(
     userAgent,
   });
 
-  return {
-    success: result.success,
-    remaining: result.remaining,
-    reset: result.reset,
-    limit: maxRequests,
-  };
+  return result.success;
 }
 
 const limiter = new Ratelimit({
