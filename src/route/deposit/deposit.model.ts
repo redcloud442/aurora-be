@@ -231,7 +231,7 @@ export const depositHistoryPostModel = async (
 
   const commonConditions: Prisma.Sql[] = [
     Prisma.raw(
-      `m.company_member_company_id = '${teamMemberProfile.company_member_company_id}'::uuid AND m.company_member_user_id = '${userId}'::uuid`
+      `m.company_member_company_id = '${teamMemberProfile.company_member_company_id}'::uuid AND m.company_member_id = '${userId}'::uuid`
     ),
   ];
 
