@@ -30,13 +30,13 @@ export const packagePostModel = async (params: {
           company_package_earnings: number;
           company_referral_earnings: number;
         }[]
-      >`SELECT 
+      >`SELECT
      company_combined_earnings,
      company_member_wallet,
      company_package_earnings,
      company_referral_earnings
-     FROM company_schema.company_earnings_table 
-     WHERE company_earnings_member_id = ${teamMemberProfile.company_member_id}::uuid 
+     FROM company_schema.company_earnings_table
+     WHERE company_earnings_member_id = ${teamMemberProfile.company_member_id}::uuid
      FOR UPDATE`,
       tx.company_referral_table.findUnique({
         where: {
@@ -532,6 +532,7 @@ export const packageListGetModel = async (params: {
           packages_days: true,
           package_percentage: true,
           package_image: true,
+          package_id: true,
         },
       },
     },
@@ -559,7 +560,7 @@ export const packageListGetModel = async (params: {
       // Calculate current amount
       const initialAmount = row.package_member_amount;
       const profitAmount = row.package_amount_earnings;
-      const currentAmount = (initialAmount + profitAmount) * percentage;
+      const currentAmount = ((initialAmount + profitAmount) * percentage) / 100;
 
       if (percentage === 100 && !row.package_member_is_ready_to_claim) {
         await prisma.package_member_connection_table.update({
@@ -584,6 +585,7 @@ export const packageListGetModel = async (params: {
         package_days: row.package_table.packages_days,
         package_image: row.package_table.package_image,
         package_date_created: row.package_member_connection_created,
+        package_id: row.package_table.package_id,
       };
     })
   );
@@ -613,13 +615,14 @@ export const packageListGetAdminModel = async () => {
 export const packagePostReinvestmentModel = async (params: {
   amount: number;
   packageId: string;
+  packageConnectionId: string;
   teamMemberProfile: company_member_table;
   user: user_table;
 }) => {
-  const { amount, packageId, teamMemberProfile } = params;
+  const { amount, packageId, packageConnectionId, teamMemberProfile } = params;
 
   const connectionData = await prisma.$transaction(async (tx) => {
-    const [packageData, earningsData, referralData] = await Promise.all([
+    const [packageData, referralData, packageConnection] = await Promise.all([
       tx.package_table.findUnique({
         where: { package_id: packageId },
         select: {
@@ -629,25 +632,19 @@ export const packagePostReinvestmentModel = async (params: {
           package_name: true,
         },
       }),
-      tx.$queryRaw<
-        {
-          company_combined_earnings: number;
-          company_package_earnings: number;
-          company_referral_earnings: number;
-        }[]
-      >`SELECT 
-       company_combined_earnings,
-       company_package_earnings,
-       company_referral_earnings
-       FROM company_schema.company_earnings_table 
-       WHERE company_earnings_member_id = ${teamMemberProfile.company_member_id}::uuid 
-       FOR UPDATE`,
-
       tx.company_referral_table.findFirst({
         where: {
           company_referral_member_id: teamMemberProfile.company_member_id,
         },
         select: { company_referral_hierarchy: true },
+      }),
+      tx.package_member_connection_table.findUnique({
+        where: {
+          package_member_connection_id: packageConnectionId,
+          package_member_member_id: teamMemberProfile.company_member_id,
+          package_member_status: "ACTIVE",
+          package_member_is_ready_to_claim: true,
+        },
       }),
     ]);
 
@@ -659,36 +656,13 @@ export const packagePostReinvestmentModel = async (params: {
       throw new Error("Package is disabled.");
     }
 
-    if (!earningsData) {
-      throw new Error("Earnings record not found.");
+    if (!packageConnection) {
+      throw new Error("Package connection not found.");
     }
 
-    const {
-      company_combined_earnings,
-      company_package_earnings,
-      company_referral_earnings,
-    } = earningsData[0];
-
-    const combinedEarnings = Number(company_combined_earnings.toFixed(2));
-    const requestedAmount = Number(amount.toFixed(2));
-
-    if (combinedEarnings < requestedAmount) {
-      throw new Error("Insufficient balance in the wallet.");
-    }
-
-    const finalAmount = requestedAmount;
-
-    const {
-      olympusEarnings,
-      referralWallet,
-      isReinvestment,
-      updatedCombinedWallet,
-    } = deductFromWalletsReinvestment(
-      requestedAmount,
-      combinedEarnings,
-      Number(company_package_earnings.toFixed(2)),
-      Number(company_referral_earnings.toFixed(2))
-    );
+    const finalAmount =
+      packageConnection.package_member_amount +
+      packageConnection.package_amount_earnings;
 
     const packagePercentage = new Prisma.Decimal(
       Number(packageData.package_percentage)
@@ -707,39 +681,64 @@ export const packagePostReinvestmentModel = async (params: {
     let bountyLogs: Prisma.package_ally_bounty_logCreateManyInput[] = [];
     let transactionLogs: Prisma.company_transaction_tableCreateManyInput[] = [];
 
-    const requestedAmountWithBonus = requestedAmount;
+    const updatedPackage = await tx.package_member_connection_table.updateMany({
+      where: {
+        package_member_connection_id: packageConnectionId,
+        package_member_status: { not: "ENDED" },
+      },
+      data: {
+        package_member_status: "ENDED",
+        package_member_is_ready_to_claim: false,
+      },
+    });
+
+    if (updatedPackage.count === 0) {
+      throw new Error("Invalid request. Package has already been claimed.");
+    }
 
     const connectionData = await tx.package_member_connection_table.create({
       data: {
         package_member_member_id: teamMemberProfile.company_member_id,
         package_member_package_id: packageId,
-        package_member_amount: Number(requestedAmountWithBonus.toFixed(2)),
+        package_member_amount: Number(amount.toFixed(2)),
         package_amount_earnings: Number(packageAmountEarnings.toFixed(2)),
         package_member_status: "ACTIVE",
         package_member_completion_date: new Date(
           Date.now() + packageData.packages_days * 24 * 60 * 60 * 1000
         ),
-        package_member_is_reinvestment: isReinvestment,
+        package_member_is_reinvestment: true,
       },
     });
 
     await tx.company_transaction_table.create({
       data: {
         company_transaction_member_id: teamMemberProfile.company_member_id,
-        company_transaction_amount: Number(requestedAmountWithBonus.toFixed(2)),
+        company_transaction_amount: Number(amount.toFixed(2)),
         company_transaction_description: `${packageData.package_name} Activated`,
         company_transaction_type: "EARNINGS",
       },
     });
 
-    await tx.company_earnings_table.update({
+    await tx.package_member_connection_table.update({
       where: {
-        company_earnings_member_id: teamMemberProfile.company_member_id,
+        package_member_connection_id: packageConnectionId,
       },
       data: {
-        company_combined_earnings: updatedCombinedWallet,
-        company_package_earnings: olympusEarnings,
-        company_referral_earnings: referralWallet,
+        package_member_is_ready_to_claim: false,
+        package_member_status: "ENDED",
+        package_earnings_log: {
+          create: {
+            package_member_package_id:
+              packageConnection.package_member_package_id,
+            package_member_member_id: teamMemberProfile.company_member_id,
+            package_member_connection_created:
+              packageConnection.package_member_connection_created,
+            package_member_amount: packageConnection.package_member_amount,
+            package_member_amount_earnings:
+              packageConnection.package_amount_earnings,
+            package_member_status: "ENDED",
+          },
+        },
       },
     });
 

@@ -14,6 +14,7 @@ import {
   packageCreatePostMiddleware,
   packageGetMiddleware,
   packagePostMiddleware,
+  packageReinvestmentPostMiddleware,
   packagesClaimPostMiddleware,
   packagesGetListMiddleware,
   packageUpdatePutMiddleware,
@@ -45,7 +46,7 @@ packages.post(
 
 packages.post(
   "/reinvestment",
-  packagePostMiddleware,
+  packageReinvestmentPostMiddleware,
   packageReinvestmentPostController
 );
 
