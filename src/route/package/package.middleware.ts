@@ -3,6 +3,7 @@ import {
   claimPackagePutSchema,
   createPackagePostSchema,
   packagePostSchema,
+  packageReinvestmentPostSchema,
   updatePackageSchema,
 } from "../../schema/schema.js";
 import { sendErrorResponse } from "../../utils/function.js";
@@ -295,6 +296,54 @@ export const packagesGetListMiddleware = async (c: Context, next: Next) => {
   if (!isAllowed) {
     return sendErrorResponse("Too Many Requests", 429);
   }
+
+  c.set("teamMemberProfile", teamMemberProfile);
+
+  await next();
+};
+
+export const packageReinvestmentPostMiddleware = async (
+  c: Context,
+  next: Next
+) => {
+  const user = c.get("user");
+
+  const response = await protectionMemberUser(user);
+
+  if (response instanceof Response) {
+    return response;
+  }
+
+  const { teamMemberProfile } = response;
+
+  if (!teamMemberProfile) {
+    return sendErrorResponse("Unauthorized", 401);
+  }
+
+  const isAllowed = await rateLimit(
+    `rate-limit:${teamMemberProfile.company_member_id}:package-post`,
+    50,
+    "1m",
+    c
+  );
+
+  if (!isAllowed) {
+    return sendErrorResponse("Too Many Requests", 429);
+  }
+
+  const { amount, packageId, packageConnectionId } = await c.req.json();
+
+  const { success, data } = packageReinvestmentPostSchema.safeParse({
+    amount,
+    packageId,
+    packageConnectionId,
+  });
+
+  if (!success) {
+    return c.json({ message: "Invalid request" }, 400);
+  }
+
+  c.set("params", data);
 
   c.set("teamMemberProfile", teamMemberProfile);
 

@@ -169,6 +169,7 @@ export const packageReinvestmentPostController = async (c: Context) => {
     const data = await packagePostReinvestmentModel({
       amount: params.amount,
       packageId: params.packageId,
+      packageConnectionId: params.packageConnectionId,
       teamMemberProfile: teamMemberProfile,
       user: user,
     });
@@ -182,6 +183,7 @@ export const packageReinvestmentPostController = async (c: Context) => {
 
     return c.json(data, 200);
   } catch (error) {
+    console.log(error);
     return sendErrorResponse("Internal Server Error", 500);
   }
 };

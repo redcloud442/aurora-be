@@ -311,6 +311,14 @@ export const packagePostSchema = z.object({
   packageId: z.string().uuid(),
 });
 
+export const packageReinvestmentPostSchema = z.object({
+    amount: z.number().refine((val) => Number(val) >= 100, {
+      message: "Minimum amount is 100 pesos",
+    }),
+    packageId: z.string().uuid(),
+    packageConnectionId: z.string().uuid(),
+  });
+
 export const createPackagePostSchema = z.object({
   packageName: z.string().min(3),
   packageDescription: z.string().min(3),
