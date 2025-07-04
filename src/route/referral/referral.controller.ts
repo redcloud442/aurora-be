@@ -24,6 +24,7 @@ export const referralDirectPostController = async (c: Context) => {
 
     return c.json(data);
   } catch (error) {
+    console.log(error);
     return sendErrorResponse("Invalid data", 400);
   }
 };

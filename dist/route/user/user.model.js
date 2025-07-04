@@ -95,7 +95,7 @@ export const userModelPost = async (params) => {
         indirectReferralAmount: member?.dashboard_earnings_summary[0]?.indirect_referral_amount ?? 0,
         totalEarnings: member?.dashboard_earnings_summary[0]?.total_earnings ?? 0,
         withdrawalAmount: member?.dashboard_earnings_summary[0]?.total_withdrawals ?? 0,
-        packageEarnings: member?.company_earnings_table[0]?.company_package_earnings ?? 0,
+        packageEarnings: member?.dashboard_earnings_summary[0]?.package_income ?? 0,
         directReferralCount: member?.dashboard_earnings_summary[0]?.direct_referral_count ?? 0,
         indirectReferralCount: member?.dashboard_earnings_summary[0]?.indirect_referral_count ?? 0,
     };
@@ -188,6 +188,12 @@ export const userModelGet = async ({ memberId }) => {
                         company_member_is_active: true,
                         company_member_date_created: true,
                         company_member_date_updated: true,
+                        merchant_member_table: {
+                            select: {
+                                merchant_member_id: true,
+                                merchant_member_balance: true,
+                            },
+                        },
                         dashboard_earnings_summary: {
                             select: {
                                 direct_referral_amount: true,
@@ -219,7 +225,7 @@ export const userModelGet = async ({ memberId }) => {
         indirectReferralAmount: member?.dashboard_earnings_summary[0]?.indirect_referral_amount ?? 0,
         totalEarnings: member?.dashboard_earnings_summary[0]?.total_earnings ?? 0,
         withdrawalAmount: member?.dashboard_earnings_summary[0]?.total_withdrawals ?? 0,
-        packageEarnings: member?.company_earnings_table[0]?.company_package_earnings ?? 0,
+        packageEarnings: member?.dashboard_earnings_summary[0]?.package_income ?? 0,
         directReferralCount: member?.dashboard_earnings_summary[0]?.direct_referral_count ?? 0,
         indirectReferralCount: member?.dashboard_earnings_summary[0]?.indirect_referral_count ?? 0,
     };
@@ -361,7 +367,7 @@ export const userSponsorModel = async (params) => {
         ON am2.company_member_id = art.company_referral_from_member_id
       JOIN user_schema.user_table ut2
         ON ut2.user_id = am2.company_member_user_id
-      WHERE ut.user_id = ${userId}::uuid
+      WHERE am.company_member_id = ${userId}::uuid
   `;
     if (!user) {
         return { success: false, error: "User not found." };

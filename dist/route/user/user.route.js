@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { userActiveListController, userChangePasswordController, userGenerateLinkController, userGetController, userGetSearchController, userListController, userListReinvestedController, userPatchController, userPostController, userProfilePutController, userPutController, userReferralController, userSponsorController, userTreeController, } from "./user.controller.js";
-import { userActiveListMiddleware, userChangePasswordMiddleware, userGenerateLinkMiddleware, userGetMiddleware, userGetSearchMiddleware, userListMiddleware, userListReinvestedMiddleware, userPatchMiddleware, userPostMiddleware, userProfilePutMiddleware, userPutMiddleware, userReferralMiddleware, userSponsorMiddleware, userTreeMiddleware, } from "./user.middleware.js";
+import { userActiveListController, userChangePasswordController, userGenerateLinkController, userGetController, userGetIdController, userGetSearchController, userListController, userListReinvestedController, userPatchController, userPostController, userProfilePutController, userPutController, userReferralController, userSponsorController, userTreeController, } from "./user.controller.js";
+import { userActiveListMiddleware, userChangePasswordMiddleware, userGenerateLinkMiddleware, userGetIdMiddleware, userGetMiddleware, userGetSearchMiddleware, userListMiddleware, userListReinvestedMiddleware, userPatchMiddleware, userPostMiddleware, userProfilePutMiddleware, userPutMiddleware, userReferralMiddleware, userSponsorMiddleware, userTreeMiddleware, } from "./user.middleware.js";
 const user = new Hono();
 user.post("/", userPostMiddleware, userPostController);
 user.put("/", userPutMiddleware, userPutController);
@@ -9,8 +9,8 @@ user.get("/search", userGetSearchMiddleware, userGetSearchController);
 user.post("/:id/referral", userReferralMiddleware, userReferralController);
 user.put("/:id", userProfilePutMiddleware, userProfilePutController);
 user.get("/:id/tree", userTreeMiddleware, userTreeController);
+user.get("/:id", userGetIdMiddleware, userGetIdController);
 user.get("/", userGetMiddleware, userGetController);
-user.get("/:id", userGetMiddleware, userGetController);
 user.put("/:id/change-password", userChangePasswordMiddleware, userChangePasswordController);
 user.post("/generate-link", userGenerateLinkMiddleware, userGenerateLinkController);
 user.post("/list/reinvested", userListReinvestedMiddleware, userListReinvestedController);

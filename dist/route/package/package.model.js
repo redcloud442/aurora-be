@@ -1,5 +1,5 @@
 import { Prisma, } from "@prisma/client";
-import { invalidateMultipleCacheVersions, toNonNegative, } from "../../utils/function.js";
+import { invalidateMultipleCache, invalidateMultipleCacheVersions, toNonNegative, } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
 import { redis } from "../../utils/redis.js";
 export const packagePostModel = async (params) => {
@@ -9,13 +9,13 @@ export const packagePostModel = async (params) => {
             tx.package_table.findFirst({
                 where: { package_id: packageId },
             }),
-            tx.$queryRaw `SELECT 
+            tx.$queryRaw `SELECT
      company_combined_earnings,
      company_member_wallet,
      company_package_earnings,
      company_referral_earnings
-     FROM company_schema.company_earnings_table 
-     WHERE company_earnings_member_id = ${teamMemberProfile.company_member_id}::uuid 
+     FROM company_schema.company_earnings_table
+     WHERE company_earnings_member_id = ${teamMemberProfile.company_member_id}::uuid
      FOR UPDATE`,
             tx.company_referral_table.findUnique({
                 where: {
@@ -45,6 +45,7 @@ export const packagePostModel = async (params) => {
         let bountyLogs = [];
         let baseKeys = [];
         let transactionKeys = [];
+        let referrerKeys = [];
         let transactionLogs = [];
         const connectionData = await tx.package_member_connection_table.create({
             data: {
@@ -109,12 +110,13 @@ export const packagePostModel = async (params) => {
                         company_transaction_description: ref.level === 1 ? "Referral" : `Matrix Level ${ref.level}`,
                     };
                 });
-                baseKeys = batch.map((ref) => {
-                    return `${ref.level > 1 ? "indirect-referral" : "direct-referral"}:${ref.referrerId}`;
-                });
-                transactionKeys = batch.map((ref) => {
-                    return `transaction:${ref.referrerId}:EARNINGS`;
-                });
+                for (const ref of batch) {
+                    const referrerId = ref.referrerId;
+                    const isIndirect = ref.level > 1;
+                    baseKeys.push(`${isIndirect ? "indirect" : "direct"}-referral:${referrerId}`);
+                    transactionKeys.push(`transaction:${referrerId}:EARNINGS`);
+                    referrerKeys.push(`user-model-get-${referrerId}`);
+                }
                 await Promise.all(batch.map(async (ref) => {
                     if (!ref.referrerId)
                         return;
@@ -143,7 +145,10 @@ export const packagePostModel = async (params) => {
         }
         if (baseKeys.length > 0) {
             const keys = [...baseKeys, ...transactionKeys];
-            await invalidateMultipleCacheVersions(keys);
+            await Promise.all([
+                invalidateMultipleCacheVersions(keys),
+                invalidateMultipleCache(referrerKeys),
+            ]);
         }
         if (!teamMemberProfile?.company_member_is_active) {
             await tx.company_member_table.update({
@@ -347,6 +352,7 @@ export const packageListGetModel = async (params) => {
                     packages_days: true,
                     package_percentage: true,
                     package_image: true,
+                    package_id: true,
                 },
             },
         },
@@ -365,7 +371,7 @@ export const packageListGetModel = async (params) => {
         // Calculate current amount
         const initialAmount = row.package_member_amount;
         const profitAmount = row.package_amount_earnings;
-        const currentAmount = (initialAmount + profitAmount) * percentage;
+        const currentAmount = ((initialAmount + profitAmount) * percentage) / 100;
         if (percentage === 100 && !row.package_member_is_ready_to_claim) {
             await prisma.package_member_connection_table.update({
                 where: {
@@ -388,6 +394,7 @@ export const packageListGetModel = async (params) => {
             package_days: row.package_table.packages_days,
             package_image: row.package_table.package_image,
             package_date_created: row.package_member_connection_created,
+            package_id: row.package_table.package_id,
         };
     }));
     return processedData;
@@ -410,9 +417,9 @@ export const packageListGetAdminModel = async () => {
     return result;
 };
 export const packagePostReinvestmentModel = async (params) => {
-    const { amount, packageId, teamMemberProfile } = params;
+    const { amount, packageId, packageConnectionId, teamMemberProfile } = params;
     const connectionData = await prisma.$transaction(async (tx) => {
-        const [packageData, earningsData, referralData] = await Promise.all([
+        const [packageData, referralData, packageConnection] = await Promise.all([
             tx.package_table.findUnique({
                 where: { package_id: packageId },
                 select: {
@@ -422,18 +429,19 @@ export const packagePostReinvestmentModel = async (params) => {
                     package_name: true,
                 },
             }),
-            tx.$queryRaw `SELECT 
-       company_combined_earnings,
-       company_package_earnings,
-       company_referral_earnings
-       FROM company_schema.company_earnings_table 
-       WHERE company_earnings_member_id = ${teamMemberProfile.company_member_id}::uuid 
-       FOR UPDATE`,
             tx.company_referral_table.findFirst({
                 where: {
                     company_referral_member_id: teamMemberProfile.company_member_id,
                 },
                 select: { company_referral_hierarchy: true },
+            }),
+            tx.package_member_connection_table.findUnique({
+                where: {
+                    package_member_connection_id: packageConnectionId,
+                    package_member_member_id: teamMemberProfile.company_member_id,
+                    package_member_status: "ACTIVE",
+                    package_member_is_ready_to_claim: true,
+                },
             }),
         ]);
         if (!packageData) {
@@ -442,50 +450,65 @@ export const packagePostReinvestmentModel = async (params) => {
         if (packageData.package_is_disabled) {
             throw new Error("Package is disabled.");
         }
-        if (!earningsData) {
-            throw new Error("Earnings record not found.");
+        if (!packageConnection) {
+            throw new Error("Package connection not found.");
         }
-        const { company_combined_earnings, company_package_earnings, company_referral_earnings, } = earningsData[0];
-        const combinedEarnings = Number(company_combined_earnings.toFixed(2));
-        const requestedAmount = Number(amount.toFixed(2));
-        if (combinedEarnings < requestedAmount) {
-            throw new Error("Insufficient balance in the wallet.");
-        }
-        const finalAmount = requestedAmount;
-        const { olympusEarnings, referralWallet, isReinvestment, updatedCombinedWallet, } = deductFromWalletsReinvestment(requestedAmount, combinedEarnings, Number(company_package_earnings.toFixed(2)), Number(company_referral_earnings.toFixed(2)));
+        const finalAmount = packageConnection.package_member_amount +
+            packageConnection.package_amount_earnings;
         const packagePercentage = new Prisma.Decimal(Number(packageData.package_percentage)).div(100);
         const packageAmountEarnings = new Prisma.Decimal(finalAmount).mul(packagePercentage);
         const referralChain = generateReferralChain(referralData?.company_referral_hierarchy ?? null, teamMemberProfile.company_member_id, 100);
         let bountyLogs = [];
         let transactionLogs = [];
-        const requestedAmountWithBonus = requestedAmount;
+        const updatedPackage = await tx.package_member_connection_table.updateMany({
+            where: {
+                package_member_connection_id: packageConnectionId,
+                package_member_status: { not: "ENDED" },
+            },
+            data: {
+                package_member_status: "ENDED",
+                package_member_is_ready_to_claim: false,
+            },
+        });
+        if (updatedPackage.count === 0) {
+            throw new Error("Invalid request. Package has already been claimed.");
+        }
         const connectionData = await tx.package_member_connection_table.create({
             data: {
                 package_member_member_id: teamMemberProfile.company_member_id,
                 package_member_package_id: packageId,
-                package_member_amount: Number(requestedAmountWithBonus.toFixed(2)),
+                package_member_amount: Number(amount.toFixed(2)),
                 package_amount_earnings: Number(packageAmountEarnings.toFixed(2)),
                 package_member_status: "ACTIVE",
                 package_member_completion_date: new Date(Date.now() + packageData.packages_days * 24 * 60 * 60 * 1000),
-                package_member_is_reinvestment: isReinvestment,
+                package_member_is_reinvestment: true,
             },
         });
         await tx.company_transaction_table.create({
             data: {
                 company_transaction_member_id: teamMemberProfile.company_member_id,
-                company_transaction_amount: Number(requestedAmountWithBonus.toFixed(2)),
+                company_transaction_amount: Number(amount.toFixed(2)),
                 company_transaction_description: `${packageData.package_name} Activated`,
                 company_transaction_type: "EARNINGS",
             },
         });
-        await tx.company_earnings_table.update({
+        await tx.package_member_connection_table.update({
             where: {
-                company_earnings_member_id: teamMemberProfile.company_member_id,
+                package_member_connection_id: packageConnectionId,
             },
             data: {
-                company_combined_earnings: updatedCombinedWallet,
-                company_package_earnings: olympusEarnings,
-                company_referral_earnings: referralWallet,
+                package_member_is_ready_to_claim: false,
+                package_member_status: "ENDED",
+                package_earnings_log: {
+                    create: {
+                        package_member_package_id: packageConnection.package_member_package_id,
+                        package_member_member_id: teamMemberProfile.company_member_id,
+                        package_member_connection_created: packageConnection.package_member_connection_created,
+                        package_member_amount: packageConnection.package_member_amount,
+                        package_member_amount_earnings: packageConnection.package_amount_earnings,
+                        package_member_status: "ENDED",
+                    },
+                },
             },
         });
         if (referralChain.length > 0) {

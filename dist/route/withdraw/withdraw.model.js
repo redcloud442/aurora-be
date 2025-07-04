@@ -111,7 +111,7 @@ export const withdrawHistoryModel = async (params, teamMemberProfile) => {
         ? Prisma.sql `ORDER BY ${Prisma.raw(columnAccessor)} ${Prisma.raw(sortBy)}`
         : Prisma.empty;
     const commonConditions = [
-        Prisma.raw(`m.company_member_company_id = '${teamMemberProfile.company_member_company_id}'::uuid AND m.company_member_user_id = '${userId}'::uuid`),
+        Prisma.raw(`m.company_member_company_id = '${teamMemberProfile.company_member_company_id}'::uuid AND m.company_member_id = '${userId}'::uuid`),
     ];
     if (search) {
         commonConditions.push(Prisma.raw(`(
@@ -251,7 +251,7 @@ export const withdrawListPostModel = async (params) => {
     if (dateFilter?.start && dateFilter?.end) {
         const startDate = getPhilippinesTime(new Date(dateFilter.start || new Date()), "start");
         const endDate = getPhilippinesTime(new Date(dateFilter.end || new Date()), "end");
-        commonConditions.push(Prisma.raw(`t.company_withdrawal_request_date_updated::timestamptz at time zone 'Asia/Manila' BETWEEN '${startDate}'::timestamptz AND '${endDate}'::timestamptz`));
+        commonConditions.push(Prisma.raw(`t.company_withdrawal_request_date_updated::timestamptz BETWEEN '${startDate}'::timestamptz AND '${endDate}'::timestamptz`));
     }
     if (search) {
         commonConditions.push(Prisma.raw(`(

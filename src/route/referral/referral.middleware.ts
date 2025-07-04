@@ -48,6 +48,7 @@ export const referralDirectMiddleware = async (c: Context, next: Next) => {
   });
 
   if (!parsedData) {
+    console.log(parsedData);
     return sendErrorResponse("Invalid data", 400);
   }
 

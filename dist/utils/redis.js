@@ -27,12 +27,7 @@ export async function rateLimit(key, maxRequests, timeWindow, c) {
         ip,
         userAgent,
     });
-    return {
-        success: result.success,
-        remaining: result.remaining,
-        reset: result.reset,
-        limit: maxRequests,
-    };
+    return result.success;
 }
 const limiter = new Ratelimit({
     redis: redis,

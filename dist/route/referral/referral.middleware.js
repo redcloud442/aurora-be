@@ -25,6 +25,7 @@ export const referralDirectMiddleware = async (c, next) => {
         isAscendingSort,
     });
     if (!parsedData) {
+        console.log(parsedData);
         return sendErrorResponse("Invalid data", 400);
     }
     c.set("teamMemberProfile", teamMemberProfile);

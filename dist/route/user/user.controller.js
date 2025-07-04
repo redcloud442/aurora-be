@@ -32,6 +32,18 @@ export const userGetController = async (c) => {
         return c.json({ error: "Internal Server Error" }, { status: 500 });
     }
 };
+export const userGetIdController = async (c) => {
+    try {
+        const { id } = c.get("params");
+        const data = await userModelGet({
+            memberId: id,
+        });
+        return c.json(data, 200);
+    }
+    catch (error) {
+        return c.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+};
 export const userPatchController = async (c) => {
     try {
         const { action, role, type } = await c.req.json();

@@ -23,10 +23,17 @@ export const referralDirectModelPost = async (params) => {
     if (directReferralIds.length === 0) {
         return { data: [], totalCount: 0 };
     }
-    // Parameterize search conditions to prevent SQL injection
-    const searchCondition = search
-        ? Prisma.raw(`AND (u.user_first_name ILIKE ${"%" + search + "%"} OR u.user_last_name ILIKE ${"%" + search + "%"} OR u.user_username ILIKE ${"%" + search + "%"})`)
-        : Prisma.empty;
+    let searchCondition = Prisma.sql ``;
+    if (search) {
+        const searchTerm = `%${search}%`;
+        searchCondition = Prisma.sql `
+      AND (
+        u.user_first_name ILIKE ${searchTerm} OR
+        u.user_last_name ILIKE ${searchTerm} OR
+        u.user_username ILIKE ${searchTerm}
+      )
+    `;
+    }
     const direct = await prisma.$queryRaw `
     SELECT
       u.user_first_name,

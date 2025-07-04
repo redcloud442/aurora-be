@@ -2,9 +2,20 @@ import { redis } from "./redis.js";
 import { supabaseClient } from "./supabase.js";
 export const sendErrorResponse = (message, status) => Response.json({ message: message }, { status });
 export const sendSuccessResponse = (message, status) => Response.json({ message: message }, { status });
-export const getClientIP = (request) => request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    request.headers.get("cf-connecting-ip") ||
-    "unknown";
+export const getClientIP = (request) => {
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    if (forwardedFor)
+        return forwardedFor.split(",")[0].trim();
+    const realIP = request.headers.get("x-real-ip");
+    if (realIP)
+        return realIP;
+    // 1. Cloudflare (most reliable if available)
+    const cfIP = request.headers.get("cf-connecting-ip");
+    if (cfIP)
+        return cfIP;
+    // 4. Fallback
+    return "unknown";
+};
 export const getUserSession = async (token) => {
     const supabase = supabaseClient;
     const session = await supabase.auth.getUser(token);
@@ -76,7 +87,7 @@ export const getDepositBonus = (amount) => {
         .reduce((prev, curr) => (curr.deposit > prev.deposit ? curr : prev), depositTiers[0]);
     return amount * lowestTier.percentage;
 };
-export const generateRandomCode = (length = 6) => {
+export const generateRandomCode = (length = 10) => {
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
     for (let i = 0; i < length; i++) {
@@ -111,4 +122,11 @@ export const invalidateMultipleCacheVersions = async (baseKeys) => {
 };
 export const invalidateCache = async (key) => {
     await redis.del(key);
+};
+export const invalidateMultipleCache = async (baseKeys) => {
+    const pipeline = redis.multi();
+    baseKeys.forEach((baseKey) => {
+        pipeline.del(baseKey);
+    });
+    await pipeline.exec();
 };
