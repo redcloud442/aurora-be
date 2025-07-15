@@ -449,7 +449,7 @@ export const withdrawListPostModel = async (params: {
 
     commonConditions.push(
       Prisma.raw(
-        `(t.company_withdrawal_request_date::timestamptz BETWEEN '${startDate}'::timestamptz AND '${endDate}'::timestamptz) OR (t.company_withdrawal_request_date_updated::timestamptz BETWEEN '${startDate}'::timestamptz AND '${endDate}'::timestamptz)`
+        `(t.company_withdrawal_request_date::timestamptz BETWEEN '${startDate}'::timestamptz AND '${endDate}'::timestamptz)`
       )
     );
   }
