@@ -1,10 +1,10 @@
-import { referralRole } from "@/utils/constant.js";
 import {
   Prisma,
   type company_member_table,
   type Role,
   type user_table,
 } from "@prisma/client";
+import { referralRole } from "../../utils/constant.js";
 import { getPhilippinesTime } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
 import { redis } from "../../utils/redis.js";

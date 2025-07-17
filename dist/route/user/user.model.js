@@ -1,3 +1,4 @@
+import { referralRole } from "@/utils/constant.js";
 import { Prisma, } from "@prisma/client";
 import { getPhilippinesTime } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
@@ -117,9 +118,9 @@ export const userModelPost = async (params) => {
 export const userModelGet = async ({ memberId }) => {
     const cacheKey = `user-model-get-${memberId}`;
     const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-        return cachedData;
-    }
+    // if (cachedData) {
+    //   return cachedData;
+    // }
     const todayStart = getPhilippinesTime(new Date(), "start");
     const todayEnd = getPhilippinesTime(new Date(), "end");
     const baseWithdrawFilter = {
@@ -188,6 +189,7 @@ export const userModelGet = async ({ memberId }) => {
                         company_member_is_active: true,
                         company_member_date_created: true,
                         company_member_date_updated: true,
+                        company_member_rank: true,
                         merchant_member_table: {
                             select: {
                                 merchant_member_id: true,
@@ -229,6 +231,13 @@ export const userModelGet = async ({ memberId }) => {
         directReferralCount: member?.dashboard_earnings_summary[0]?.direct_referral_count ?? 0,
         indirectReferralCount: member?.dashboard_earnings_summary[0]?.indirect_referral_count ?? 0,
     };
+    const referralRank = getReferralRole(totalEarnings.directReferralCount);
+    if (member?.company_member_rank !== referralRank) {
+        await prisma.company_member_table.update({
+            where: { company_member_id: memberId },
+            data: { company_member_rank: referralRank },
+        });
+    }
     const actions = {
         canWithdrawPackage: existingPackageWithdrawal === null,
         canWithdrawReferral: existingReferralWithdrawal === null,
@@ -766,3 +775,15 @@ export const userReferralModel = async (params) => {
     });
     return result;
 };
+function getReferralRole(referralCount) {
+    const thresholds = Object.keys(referralRole)
+        .map(Number)
+        .sort((a, b) => a - b);
+    let qualifiedRole = null;
+    for (const threshold of thresholds) {
+        if (referralCount >= threshold) {
+            qualifiedRole = referralRole[threshold];
+        }
+    }
+    return qualifiedRole;
+}
