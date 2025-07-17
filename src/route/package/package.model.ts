@@ -236,7 +236,14 @@ export const packagePostModel = async (params: {
       ]);
     }
 
-    if (!teamMemberProfile?.company_member_is_active) {
+    const isActive = await tx.company_member_table.findUnique({
+      where: { company_member_id: teamMemberProfile.company_member_id },
+      select: {
+        company_member_is_active: true,
+      },
+    });
+
+    if (!isActive?.company_member_is_active) {
       await tx.company_member_table.update({
         where: { company_member_id: teamMemberProfile.company_member_id },
         data: {
