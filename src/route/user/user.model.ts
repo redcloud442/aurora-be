@@ -149,9 +149,9 @@ export const userModelGet = async ({ memberId }: { memberId: string }) => {
 
   const cachedData = await redis.get(cacheKey);
 
-  // if (cachedData) {
-  //   return cachedData;
-  // }
+  if (cachedData) {
+    return cachedData;
+  }
 
   const todayStart = getPhilippinesTime(new Date(), "start");
   const todayEnd = getPhilippinesTime(new Date(), "end");
