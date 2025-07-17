@@ -28,9 +28,9 @@ export const referralDirectModelPost = async (params: {
 
   const cachedData = await redis.get(cacheKey);
 
-  if (cachedData) {
-    return cachedData;
-  }
+  // if (cachedData) {
+  //   return cachedData;
+  // }
 
   const offset = Math.max((page - 1) * limit, 0);
 
@@ -65,24 +65,28 @@ export const referralDirectModelPost = async (params: {
   }
 
   const direct = await prisma.$queryRaw`
-  SELECT DISTINCT ON (u.user_id)
-    u.user_first_name,
-    u.user_last_name,
-    u.user_username,
-    pa.package_ally_bounty_log_date_created,
-    ar.company_referral_date,
-    COALESCE(SUM(pa.package_ally_bounty_earnings), 0) AS total_bounty_earnings
-  FROM company_schema.company_member_table m
-  JOIN user_schema.user_table u ON u.user_id = m.company_member_user_id
-  JOIN packages_schema.package_ally_bounty_log pa ON pa.package_ally_bounty_from = m.company_member_id
-  JOIN packages_schema.package_member_connection_table pc ON pa.package_ally_bounty_connection_id = pc.package_member_connection_id
-  JOIN company_schema.company_referral_table ar ON ar.company_referral_member_id = pa.package_ally_bounty_from
-  WHERE pa.package_ally_bounty_member_id = ${teamMemberProfile.company_member_id}::uuid
-    AND pa.package_ally_bounty_type = 'DIRECT'
-    AND pc.package_member_is_reinvestment = false
-    ${searchCondition}
-  GROUP BY u.user_id, u.user_first_name, u.user_last_name, u.user_username, pa.package_ally_bounty_log_date_created, ar.company_referral_date
-  ORDER BY u.user_id, pa.package_ally_bounty_log_date_created ASC, ar.company_referral_date DESC
+  SELECT *
+  FROM (
+    SELECT DISTINCT ON (u.user_id)
+      u.user_first_name,
+      u.user_last_name,
+      u.user_username,
+      pa.package_ally_bounty_log_date_created,
+      ar.company_referral_date,
+      COALESCE(SUM(pa.package_ally_bounty_earnings), 0) AS total_bounty_earnings
+    FROM company_schema.company_member_table m
+    JOIN user_schema.user_table u ON u.user_id = m.company_member_user_id
+    JOIN packages_schema.package_ally_bounty_log pa ON pa.package_ally_bounty_from = m.company_member_id
+    JOIN packages_schema.package_member_connection_table pc ON pa.package_ally_bounty_connection_id = pc.package_member_connection_id
+    JOIN company_schema.company_referral_table ar ON ar.company_referral_member_id = pa.package_ally_bounty_from
+    WHERE pa.package_ally_bounty_member_id = ${teamMemberProfile.company_member_id}::uuid
+      AND pa.package_ally_bounty_type = 'DIRECT'
+      AND pc.package_member_is_reinvestment = false
+      ${searchCondition}
+    GROUP BY u.user_id, u.user_first_name, u.user_last_name, u.user_username, pa.package_ally_bounty_log_date_created, ar.company_referral_date
+    ORDER BY u.user_id, pa.package_ally_bounty_log_date_created DESC
+  ) AS sub
+  ORDER BY sub.package_ally_bounty_log_date_created DESC
   LIMIT ${limit} OFFSET ${offset}
 `;
 
@@ -211,6 +215,8 @@ export const referralIndirectModelPost = async (params: {
     package_ally_bounty_log_date_created: Date;
     total_bounty_earnings: number;
   }[] = await prisma.$queryRaw`
+  SELECT *
+  FROM (
       SELECT DISTINCT ON (ut.user_id)
         ut.user_first_name, 
         ut.user_last_name, 
@@ -240,6 +246,8 @@ export const referralIndirectModelPost = async (params: {
         ar.company_referral_date
       ORDER BY ut.user_id, pa.package_ally_bounty_log_date_created DESC, ar.company_referral_date DESC
       LIMIT ${limit} OFFSET ${offset};
+      ) AS sub
+      ORDER BY sub.package_ally_bounty_log_date_created DESC
     `;
 
   const totalCountResult: { count: number }[] = await prisma.$queryRaw`
