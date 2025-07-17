@@ -71,6 +71,7 @@ model company_member_table {
   company_member_restricted      Boolean   @default(false)
   company_member_date_updated    DateTime?  @db.Timestamptz(3)
   company_member_is_active       Boolean   @default(false)
+  company_member_rank            String?
   user_table                      user_table            @relation(fields: [company_member_user_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
   company_member_table            company_table        @relation(fields: [company_member_company_id], references: [company_id], onDelete: Cascade, onUpdate: Cascade)
 

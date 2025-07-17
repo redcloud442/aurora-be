@@ -1,3 +1,4 @@
+import { referralRole } from "@/utils/constant.js";
 import {
   Prisma,
   type company_member_table,
@@ -148,9 +149,9 @@ export const userModelGet = async ({ memberId }: { memberId: string }) => {
 
   const cachedData = await redis.get(cacheKey);
 
-  if (cachedData) {
-    return cachedData;
-  }
+  // if (cachedData) {
+  //   return cachedData;
+  // }
 
   const todayStart = getPhilippinesTime(new Date(), "start");
   const todayEnd = getPhilippinesTime(new Date(), "end");
@@ -227,6 +228,7 @@ export const userModelGet = async ({ memberId }: { memberId: string }) => {
             company_member_is_active: true,
             company_member_date_created: true,
             company_member_date_updated: true,
+            company_member_rank: true,
             merchant_member_table: {
               select: {
                 merchant_member_id: true,
@@ -275,6 +277,15 @@ export const userModelGet = async ({ memberId }: { memberId: string }) => {
     indirectReferralCount:
       member?.dashboard_earnings_summary[0]?.indirect_referral_count ?? 0,
   };
+
+  const referralRank = getReferralRole(0);
+
+  if (member?.company_member_rank !== referralRank) {
+    await prisma.company_member_table.update({
+      where: { company_member_id: memberId },
+      data: { company_member_rank: referralRank },
+    });
+  }
 
   const actions = {
     canWithdrawPackage: existingPackageWithdrawal === null,
@@ -985,3 +996,19 @@ export const userReferralModel = async (params: {
   });
   return result;
 };
+
+function getReferralRole(referralCount: number): string | null {
+  const thresholds = Object.keys(referralRole)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  let qualifiedRole: string | null = null;
+
+  for (const threshold of thresholds) {
+    if (referralCount >= threshold) {
+      qualifiedRole = referralRole[threshold as keyof typeof referralRole];
+    }
+  }
+
+  return qualifiedRole;
+}
