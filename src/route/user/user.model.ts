@@ -278,7 +278,7 @@ export const userModelGet = async ({ memberId }: { memberId: string }) => {
       member?.dashboard_earnings_summary[0]?.indirect_referral_count ?? 0,
   };
 
-  const referralRank = getReferralRole(0);
+  const referralRank = getReferralRole(totalEarnings.directReferralCount);
 
   if (member?.company_member_rank !== referralRank) {
     await prisma.company_member_table.update({
