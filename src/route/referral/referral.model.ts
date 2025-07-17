@@ -28,9 +28,9 @@ export const referralDirectModelPost = async (params: {
 
   const cachedData = await redis.get(cacheKey);
 
-  // if (cachedData) {
-  //   return cachedData;
-  // }
+  if (cachedData) {
+    return cachedData;
+  }
 
   const offset = Math.max((page - 1) * limit, 0);
 
