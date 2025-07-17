@@ -41,7 +41,7 @@ export const packagePostModel = async (params) => {
         const { companyWallet, companyEarnings, companyReferralBounty, companyCombinedEarnings, updatedCombinedWallet, isReinvestment, } = deductFromWallets(requestedAmount, combinedEarnings, Number(company_member_wallet.toFixed(2)), Number(company_package_earnings.toFixed(2)), Number(company_referral_earnings.toFixed(2)), Number(company_combined_earnings.toFixed(2)));
         const packagePercentage = new Prisma.Decimal(Number(packageData.package_percentage)).div(100);
         const packageAmountEarnings = new Prisma.Decimal(requestedAmount).mul(packagePercentage);
-        const referralChain = generateReferralChain(referralData?.company_referral_hierarchy ?? null, teamMemberProfile.company_member_id, 100);
+        const referralChain = await generateReferralChain(referralData?.company_referral_hierarchy ?? null, teamMemberProfile.company_member_id, 100);
         let bountyLogs = [];
         let baseKeys = [];
         let transactionKeys = [];
@@ -108,6 +108,7 @@ export const packagePostModel = async (params) => {
                         company_transaction_amount: calculatedEarnings,
                         company_transaction_type: "EARNINGS",
                         company_transaction_description: ref.level === 1 ? "Referral" : `Matrix Level ${ref.level}`,
+                        company_transaction_details: ref.userName,
                     };
                 });
                 for (const ref of batch) {
@@ -150,7 +151,13 @@ export const packagePostModel = async (params) => {
                 invalidateMultipleCache(referrerKeys),
             ]);
         }
-        if (!teamMemberProfile?.company_member_is_active) {
+        const isActive = await tx.company_member_table.findUnique({
+            where: { company_member_id: teamMemberProfile.company_member_id },
+            select: {
+                company_member_is_active: true,
+            },
+        });
+        if (!isActive?.company_member_is_active) {
             await tx.company_member_table.update({
                 where: { company_member_id: teamMemberProfile.company_member_id },
                 data: {
@@ -457,7 +464,7 @@ export const packagePostReinvestmentModel = async (params) => {
             packageConnection.package_amount_earnings;
         const packagePercentage = new Prisma.Decimal(Number(packageData.package_percentage)).div(100);
         const packageAmountEarnings = new Prisma.Decimal(finalAmount).mul(packagePercentage);
-        const referralChain = generateReferralChain(referralData?.company_referral_hierarchy ?? null, teamMemberProfile.company_member_id, 100);
+        const referralChain = await generateReferralChain(referralData?.company_referral_hierarchy ?? null, teamMemberProfile.company_member_id, 100);
         let bountyLogs = [];
         let transactionLogs = [];
         const updatedPackage = await tx.package_member_connection_table.updateMany({
@@ -571,7 +578,7 @@ export const packagePostReinvestmentModel = async (params) => {
     });
     return connectionData;
 };
-function generateReferralChain(hierarchy, teamMemberId, maxDepth = 100) {
+async function generateReferralChain(hierarchy, teamMemberId, maxDepth = 100) {
     if (!hierarchy)
         return [];
     const hierarchyArray = hierarchy.split(".");
@@ -579,6 +586,24 @@ function generateReferralChain(hierarchy, teamMemberId, maxDepth = 100) {
     if (currentIndex === -1) {
         throw new Error("Current member ID not found in the hierarchy.");
     }
+    // Fetch usernames for all member IDs in the hierarchy
+    const users = await prisma.company_member_table.findMany({
+        where: { company_member_id: { in: hierarchyArray } },
+        select: {
+            company_member_id: true,
+            user_table: {
+                select: {
+                    user_username: true,
+                },
+            },
+        },
+    });
+    // Create a map for quick lookup
+    const userMap = new Map(users.map((user) => [
+        user.company_member_id,
+        user.user_table?.user_username || null,
+    ]));
+    // Generate referral chain
     return hierarchyArray
         .slice(0, currentIndex)
         .reverse()
@@ -587,6 +612,7 @@ function generateReferralChain(hierarchy, teamMemberId, maxDepth = 100) {
         referrerId,
         percentage: getBonusPercentage(index + 1),
         level: index + 1,
+        userName: userMap.get(referrerId),
     }));
 }
 function getBonusPercentage(level) {

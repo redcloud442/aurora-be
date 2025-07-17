@@ -95,7 +95,7 @@ export const packagePostModel = async (params: {
       packagePercentage
     );
 
-    const referralChain = generateReferralChain(
+    const referralChain = await generateReferralChain(
       referralData?.company_referral_hierarchy ?? null,
       teamMemberProfile.company_member_id,
       100
@@ -181,6 +181,7 @@ export const packagePostModel = async (params: {
             company_transaction_type: "EARNINGS",
             company_transaction_description:
               ref.level === 1 ? "Referral" : `Matrix Level ${ref.level}`,
+            company_transaction_details: ref.userName,
           };
         });
 
@@ -679,7 +680,7 @@ export const packagePostReinvestmentModel = async (params: {
       packagePercentage
     );
 
-    const referralChain = generateReferralChain(
+    const referralChain = await generateReferralChain(
       referralData?.company_referral_hierarchy ?? null,
       teamMemberProfile.company_member_id,
       100
@@ -827,7 +828,7 @@ export const packagePostReinvestmentModel = async (params: {
   return connectionData;
 };
 
-function generateReferralChain(
+async function generateReferralChain(
   hierarchy: string | null,
   teamMemberId: string,
   maxDepth = 100
@@ -841,6 +842,28 @@ function generateReferralChain(
     throw new Error("Current member ID not found in the hierarchy.");
   }
 
+  // Fetch usernames for all member IDs in the hierarchy
+  const users = await prisma.company_member_table.findMany({
+    where: { company_member_id: { in: hierarchyArray } },
+    select: {
+      company_member_id: true,
+      user_table: {
+        select: {
+          user_username: true,
+        },
+      },
+    },
+  });
+
+  // Create a map for quick lookup
+  const userMap = new Map(
+    users.map((user) => [
+      user.company_member_id,
+      user.user_table?.user_username || null,
+    ])
+  );
+
+  // Generate referral chain
   return hierarchyArray
     .slice(0, currentIndex)
     .reverse()
@@ -849,6 +872,7 @@ function generateReferralChain(
       referrerId,
       percentage: getBonusPercentage(index + 1),
       level: index + 1,
+      userName: userMap.get(referrerId),
     }));
 }
 

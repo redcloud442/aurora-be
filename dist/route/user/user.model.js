@@ -1,5 +1,5 @@
-import { referralRole } from "@/utils/constant.js";
 import { Prisma, } from "@prisma/client";
+import { referralRole } from "../../utils/constant.js";
 import { getPhilippinesTime } from "../../utils/function.js";
 import prisma from "../../utils/prisma.js";
 import { redis } from "../../utils/redis.js";
@@ -118,9 +118,9 @@ export const userModelPost = async (params) => {
 export const userModelGet = async ({ memberId }) => {
     const cacheKey = `user-model-get-${memberId}`;
     const cachedData = await redis.get(cacheKey);
-    // if (cachedData) {
-    //   return cachedData;
-    // }
+    if (cachedData) {
+        return cachedData;
+    }
     const todayStart = getPhilippinesTime(new Date(), "start");
     const todayEnd = getPhilippinesTime(new Date(), "end");
     const baseWithdrawFilter = {

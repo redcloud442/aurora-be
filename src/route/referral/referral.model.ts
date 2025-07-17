@@ -142,9 +142,9 @@ export const referralIndirectModelPost = async (params: {
 
   const cachedData = await redis.get(cacheKey);
 
-  // if (cachedData) {
-  //   return cachedData;
-  // }
+  if (cachedData) {
+    return cachedData;
+  }
 
   const directReferrals = await prisma.company_referral_table.findMany({
     where: {
