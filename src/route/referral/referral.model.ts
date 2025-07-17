@@ -142,9 +142,9 @@ export const referralIndirectModelPost = async (params: {
 
   const cachedData = await redis.get(cacheKey);
 
-  if (cachedData) {
-    return cachedData;
-  }
+  // if (cachedData) {
+  //   return cachedData;
+  // }
 
   const directReferrals = await prisma.company_referral_table.findMany({
     where: {
@@ -217,6 +217,8 @@ export const referralIndirectModelPost = async (params: {
   }[] = await prisma.$queryRaw`
   SELECT *
   FROM (
+
+  
       SELECT DISTINCT ON (ut.user_id)
         ut.user_first_name, 
         ut.user_last_name, 
@@ -245,7 +247,7 @@ export const referralIndirectModelPost = async (params: {
         pa.package_ally_bounty_log_date_created,
         ar.company_referral_date
       ORDER BY ut.user_id, pa.package_ally_bounty_log_date_created DESC, ar.company_referral_date DESC
-      LIMIT ${limit} OFFSET ${offset};
+      LIMIT ${limit} OFFSET ${offset}
       ) AS sub
       ORDER BY sub.package_ally_bounty_log_date_created DESC
     `;
