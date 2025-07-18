@@ -843,8 +843,8 @@ async function generateReferralChain(
   }
 
   // Fetch usernames for all member IDs in the hierarchy
-  const users = await prisma.company_member_table.findMany({
-    where: { company_member_id: { in: hierarchyArray } },
+  const users = await prisma.company_member_table.findUnique({
+    where: { company_member_id: teamMemberId },
     select: {
       company_member_id: true,
       user_table: {
@@ -855,14 +855,6 @@ async function generateReferralChain(
     },
   });
 
-  // Create a map for quick lookup
-  const userMap = new Map(
-    users.map((user) => [
-      user.company_member_id,
-      user.user_table?.user_username || null,
-    ])
-  );
-
   // Generate referral chain
   return hierarchyArray
     .slice(0, currentIndex)
@@ -872,7 +864,7 @@ async function generateReferralChain(
       referrerId,
       percentage: getBonusPercentage(index + 1),
       level: index + 1,
-      userName: userMap.get(referrerId),
+      userName: users?.user_table?.user_username || null,
     }));
 }
 
