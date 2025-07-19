@@ -84,7 +84,7 @@ export const referralDirectModelPost = async (params: {
       AND pc.package_member_is_reinvestment = false
       ${searchCondition}
     GROUP BY u.user_id, u.user_first_name, u.user_last_name, u.user_username, pa.package_ally_bounty_log_date_created, ar.company_referral_date
-    ORDER BY u.user_id, pa.package_ally_bounty_log_date_created DESC
+    ORDER BY u.user_id, pa.package_ally_bounty_log_date_created ASC
   ) AS sub
   ORDER BY sub.package_ally_bounty_log_date_created DESC
   LIMIT ${limit} OFFSET ${offset}
@@ -243,7 +243,7 @@ export const referralIndirectModelPost = async (params: {
         ut.user_username, 
         pa.package_ally_bounty_log_date_created,
         ar.company_referral_date
-      ORDER BY ut.user_id, pa.package_ally_bounty_log_date_created DESC, ar.company_referral_date DESC
+      ORDER BY ut.user_id, pa.package_ally_bounty_log_date_created ASC, ar.company_referral_date ASC
       ) AS sub
       ORDER BY sub.package_ally_bounty_log_date_created DESC
       LIMIT ${limit} OFFSET ${offset}
