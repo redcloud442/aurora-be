@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { protectionMiddleware } from "../middleware/protection.middleware.js";
 import access from "./auth/auth.route.js";
+import banner from "./banner/banner.route.js";
 import dashboard from "./dashboard/dashboard.route.js";
 import deposit from "./deposit/deposit.route.js";
 import health from "./health/health.route.js";
@@ -11,8 +12,8 @@ import packages from "./package/package.route.js";
 import referral from "./referral/referral.route.js";
 import transaction from "./transaction/transaction.route.js";
 import user from "./user/user.route.js";
+import webhook from "./webhook/webhook.route.js";
 import withdraw from "./withdraw/withdraw.route.js";
-import banner from "./banner/banner.route.js";
 
 const app = new Hono();
 
@@ -65,6 +66,9 @@ app.route("/options", options);
 //banner route
 app.use("/banner/*", protectionMiddleware);
 app.route("/banner", banner);
+
+//webhook route
+app.route("/webhook", webhook);
 
 app.get("/", (c) => {
   return c.html(`
