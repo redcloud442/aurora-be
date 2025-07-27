@@ -21,7 +21,7 @@ export const MineSweepWebhookModel = async (params: {
         company_earnings_id: companyEarnings.company_earnings_id,
       },
       data: {
-        company_member_wallet: {
+        company_package_earnings: {
           increment: amount,
         },
         company_combined_earnings: {
