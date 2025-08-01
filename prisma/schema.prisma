@@ -92,7 +92,7 @@ model company_member_table {
   company_hidden_user_table_action_by company_hidden_user_table[] @relation("ActionBy")
 
   package_ally_bounty_log_from package_ally_bounty_log[] @relation("FromMember")
-  dashboard_earnings_summary dashboard_earnings_summary[]
+
   @@schema("company_schema")
 
   @@index([ company_member_company_id], name: "idx_company_member_company_id")
@@ -131,9 +131,8 @@ model company_referral_table {
   @@index([company_referral_member_id], name: "idx_company_referral_member_id")
   @@index([company_referral_from_member_id], name: "idx_company_referral_from_member_id")
 }
-
 view dashboard_earnings_summary {
-  member_id              String   @id @map("member_id") @db.Uuid
+  member_id              String   @map("member_id") @db.Uuid
   total_earnings         Float    @default(0.0) @map("total_earnings")
   total_withdrawals      Float    @default(0.0) @map("total_withdrawals")
   package_income         Float    @default(0.0) @map("package_income")
@@ -141,8 +140,6 @@ view dashboard_earnings_summary {
   indirect_referral_amount Float  @default(0.0) @map("indirect_referral_amount")
   direct_referral_count  Int      @default(0) @map("direct_referral_count")
   indirect_referral_count Int     @default(0) @map("indirect_referral_count")
-
-  company_member_table company_member_table @relation(fields: [member_id], references: [company_member_id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("dashboard_earnings_summary")
   @@schema("company_schema")

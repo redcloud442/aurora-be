@@ -559,6 +559,14 @@ export const withdrawListPostModel = async (params: {
       Number(totalApprovedWithdrawal._sum.company_withdrawal_request_fee);
   }
 
+  const hiddenIds = await prisma.company_hidden_user_table.findMany({
+    select: { company_hidden_user_member_id: true },
+  });
+
+  const notHiddenMembers = hiddenIds.map(
+    (u) => u.company_hidden_user_member_id
+  );
+
   const totalPendingWithdrawal =
     await prisma.company_withdrawal_request_table.aggregate({
       where: {
@@ -570,6 +578,9 @@ export const withdrawListPostModel = async (params: {
         company_withdrawal_request_date: {
           gte: startDate,
           lte: endDate,
+        },
+        company_withdrawal_request_member_id: {
+          notIn: notHiddenMembers,
         },
       },
       _sum: {

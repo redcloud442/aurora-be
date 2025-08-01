@@ -54,7 +54,7 @@ export const referralDirectModelPost = async (params) => {
       AND pc.package_member_is_reinvestment = false
       ${searchCondition}
     GROUP BY u.user_id, u.user_first_name, u.user_last_name, u.user_username, pa.package_ally_bounty_log_date_created, ar.company_referral_date
-    ORDER BY u.user_id, pa.package_ally_bounty_log_date_created DESC
+    ORDER BY u.user_id, pa.package_ally_bounty_log_date_created ASC
   ) AS sub
   ORDER BY sub.package_ally_bounty_log_date_created DESC
   LIMIT ${limit} OFFSET ${offset}
@@ -136,8 +136,6 @@ export const referralIndirectModelPost = async (params) => {
     const indirectReferralDetails = await prisma.$queryRaw `
   SELECT *
   FROM (
-
-  
       SELECT DISTINCT ON (ut.user_id)
         ut.user_first_name, 
         ut.user_last_name, 
@@ -156,7 +154,6 @@ export const referralIndirectModelPost = async (params) => {
         ON pa.package_ally_bounty_connection_id = pc.package_member_connection_id
       WHERE pa.package_ally_bounty_from = ANY(${finalIndirectReferralIds}::uuid[])
         AND pa.package_ally_bounty_member_id = ${teamMemberProfile.company_member_id}::uuid 
-        AND pc.package_member_is_reinvestment = false
         ${searchCondition}
       GROUP BY 
         ut.user_id,
@@ -165,10 +162,10 @@ export const referralIndirectModelPost = async (params) => {
         ut.user_username, 
         pa.package_ally_bounty_log_date_created,
         ar.company_referral_date
-      ORDER BY ut.user_id, pa.package_ally_bounty_log_date_created DESC, ar.company_referral_date DESC
-      LIMIT ${limit} OFFSET ${offset}
+      ORDER BY ut.user_id, pa.package_ally_bounty_log_date_created ASC, ar.company_referral_date ASC
       ) AS sub
       ORDER BY sub.package_ally_bounty_log_date_created DESC
+      LIMIT ${limit} OFFSET ${offset}
     `;
     const totalCountResult = await prisma.$queryRaw `
   SELECT COUNT(*) AS count
@@ -183,7 +180,6 @@ export const referralIndirectModelPost = async (params) => {
       ON pa.package_ally_bounty_connection_id = pc.package_member_connection_id
     WHERE pa.package_ally_bounty_from = ANY(${finalIndirectReferralIds}::uuid[])
       AND pa.package_ally_bounty_member_id = ${teamMemberProfile.company_member_id}::uuid
-      AND pc.package_member_is_reinvestment = false
       ${searchCondition}
     ORDER BY ut.user_id, pa.package_ally_bounty_log_date_created DESC
   ) AS subquery;

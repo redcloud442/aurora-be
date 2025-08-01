@@ -10,6 +10,7 @@ export const loginController = async (c) => {
         return c.json({ message: "Login successful" }, 200);
     }
     catch (error) {
+        console.log(error);
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             return c.json({ message: "A database error occurred" }, 500);
         }

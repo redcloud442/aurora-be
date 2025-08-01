@@ -297,7 +297,7 @@ export const merchantBankSchema = z.object({
 });
 //withdraw schema
 export const withdrawPostSchema = z.object({
-    earnings: z.enum(["PACKAGE", "REFERRAL"]),
+    earnings: z.enum(["PACKAGE", "REFERRAL", "WIN"]),
     amount: z
         .string()
         .min(3, "Minimum amount is required atleast 100 pesos")
@@ -418,4 +418,9 @@ export const bannerDeleteSchema = z.object({
 });
 export const userGetIdSchema = z.object({
     id: z.string().uuid(),
+});
+export const MineSweepWebhookSchema = z.object({
+    event: z.enum(["minesweep_win"]),
+    amount: z.number(),
+    memberId: z.string().uuid(),
 });
