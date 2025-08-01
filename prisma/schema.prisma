@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema","views"]
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
@@ -131,7 +131,7 @@ model company_referral_table {
   @@index([company_referral_member_id], name: "idx_company_referral_member_id")
   @@index([company_referral_from_member_id], name: "idx_company_referral_from_member_id")
 }
-view dashboard_earnings_summary {
+model dashboard_earnings_summary {
   member_id              String   @id @map("member_id") @db.Uuid
   total_earnings         Float    @default(0.0) @map("total_earnings")
   total_withdrawals      Float    @default(0.0) @map("total_withdrawals")
